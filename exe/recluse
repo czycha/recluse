@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "recluse"
+
+Recluse::CLI::Main.start(ARGV)

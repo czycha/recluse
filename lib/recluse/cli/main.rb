@@ -5,7 +5,9 @@ require 'csv'
 require 'user_config'
 
 module Recluse
-	module CLI
+	##
+	# Command-line interface segments.
+	module CLI #:nodoc: all
 		class Main < Thor
 			no_commands do
 				def perc(num, den)
@@ -14,7 +16,7 @@ module Recluse
 				def save(profile, csv_path, find: false)
 					puts "Saving report..."
 					if find
-						report = profile.results.parents as_hash: true
+						report = profile.results.parents
 						child_count = 0
 						parent_count = 0
 						CSV.open(csv_path, "w+") do |csv|
@@ -32,7 +34,7 @@ module Recluse
 						puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}"
 					else
 						counts = {}
-						report = profile.results.children as_hash: true
+						report = profile.results.children
 						CSV.open(csv_path, "w+") do |csv|
 							csv << ["Status code", "URL", "On pages", "With error"]
 							report.each do |child, info|
@@ -70,13 +72,13 @@ module Recluse
 				# puts options.to_s
 				if profiles.length == 0
 					puts "No profile provided"
-					exit -1
+					exit(-1)
 				end
 				begin
 					profile_queue = profiles.map { |profile_name| Recluse::Profile.load profile_name }
 				rescue ProfileError => e
 					puts e
-					exit -1
+					exit(-1)
 				end
 				profile = profile_queue[0]
 				Signal.trap 'INT' do
@@ -93,7 +95,7 @@ module Recluse
 						Signal.trap 'INT', 'DEFAULT'
 						Signal.trap 'TERM', 'DEFAULT'
 						puts "No glob patterns provided for --find option"
-						exit -1
+						exit(-1)
 					end
 					for i in 0...profile_queue.length
 						profile.results = profile_queue[i - 1].results unless i == 0

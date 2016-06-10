@@ -7,7 +7,7 @@ require 'safe_yaml'
 require 'user_config'
 
 module Recluse
-	module CLI
+	module CLI #:nodoc: all
 		SafeYAML::OPTIONS[:default_mode] = :safe
 		class Profile < Thor
 			method_option :blacklist, :type => :array, :desc => "Glob patterns for URLs to ignore", :default => []
@@ -19,7 +19,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				if uconf.exist?("#{name}.yaml")
 					puts "Profile #{name} already exists"
-					exit -1
+					exit(-1)
 				end
 				begin
 					profile = Recluse::Profile.new(
@@ -34,7 +34,7 @@ module Recluse
 					profile.save
 				rescue ProfileError => e
 					puts e
-					exit -1
+					exit(-1)
 				end
 			end
 			desc "profile remove name", "remove profile"
@@ -43,7 +43,7 @@ module Recluse
 				if uconf.exist?("#{name}.yaml")
 					uconf.delete "#{name}.yaml"
 				else
-					exit -1
+					exit(-1)
 				end
 			end
 			method_option :blacklist, :type => :array, :desc => "Glob patterns for URLs to ignore"
@@ -58,7 +58,7 @@ module Recluse
 					profile = Recluse::Profile.load name
 				rescue ProfileError => e
 					puts e
-					exit -1
+					exit(-1)
 				end
 				profile.roots = options["roots"] if options.has_key? "roots"
 				profile.blacklist = options["blacklist"] if options.has_key? "blacklist"
@@ -73,7 +73,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				if uconf.exist?("#{new_name}.yaml")
 					puts "Profile #{new_name} already exists"
-					exit -1
+					exit(-1)
 				end
 				if uconf.exist?("#{old_name}.yaml")
 					old_profile = uconf["#{old_name}.yaml"]
@@ -99,7 +99,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
 					puts "Profile #{name} doesn't exist"
-					exit -1
+					exit(-1)
 				end
 				puts uconf["#{name}.yaml"].to_yaml
 			end

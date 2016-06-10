@@ -9,10 +9,48 @@ require 'colorize'
 require 'user_config'
 
 module Recluse
+	##
+	# Error to throw if there's something non-standard with the profile configuration.
 	class ProfileError < RuntimeError
 	end
+
+	##
+	# A profile is an atomic unit of rules for link checking.
 	class Profile
-		attr_accessor :name, :roots, :email, :blacklist, :whitelist, :internal_only, :scheme_squash, :results
+		##
+		# Identifier of the profile. Make sure that it is filename friendly. Required.
+		attr_accessor :name
+
+		##
+		# Array of URLs to start spidering. Required.
+		attr_accessor :roots
+
+		##
+		# Used in the user-agent to identify who is running the crawler. This is so that if there's a problem with your spidering, you will be contacted and not the author of Recluse. Required.
+		attr_accessor :email
+
+		##
+		# Array of URL patterns to check. Optional. Defaults to empty array.
+		attr_accessor :blacklist
+
+		##
+		# Array of exceptions to the blacklist. Optional. Defaults to empty array.
+		attr_accessor :whitelist
+
+		##
+		# Don't check external URLs. Optional. Defaults to +false+.
+		attr_accessor :internal_only
+
+		##
+		# HTTP and HTTPS schemed URLs are treated as equal. Optional. Defaults to +false+.
+		attr_accessor :scheme_squash
+
+		##
+		# +WeirdTree+ representation of results.
+		attr_accessor :results
+
+		##
+		# Create a profile.
 		def initialize(
 				name, 
 				roots,
@@ -35,6 +73,9 @@ module Recluse
 			@scheme_squash = scheme_squash
 			@results = WeirdTree.new
 		end
+
+		##
+		# Create a +Mechanize+ agent.
 		def create_agent
 			Mechanize.new do |a| 
 				a.ssl_version = 'TLSv1'
@@ -45,6 +86,10 @@ module Recluse
 				a.user_agent = "Mozilla/5.0 (compatible; recluse/#{Recluse::VERSION}; +#{Recluse::URL}) #{@email}"
 			end
 		end
+
+		##
+		# Main runner. Starting from the roots, goes through each runnable link and records the referrer, the status code, and any errors.
+		# Results are saved in <tt>@results</tt>.
 		def run
 			queue = @roots.map { |url| Link.new(url, :root) }
 			addrroot = @roots.map { |url| Addressable::URI.parse url }
@@ -98,6 +143,9 @@ module Recluse
 				puts "\a^ #{"Error".colorize(:mode => :bold, :color => :red)}: #{result.error}" unless result.error == false
 			end
 		end
+
+		##
+		# Find links matching glob patterns, starting from the roots. Overrides (but does not overwrite) +internal_only+ behavior to +true+.
 		def find glob
 			queue = @roots.map { |url| Link.new(url, :root) }
 			addrroot = @roots.map { |url| Addressable::URI.parse url }
@@ -155,6 +203,9 @@ module Recluse
 				end
 			end
 		end
+
+		##
+		# Saves profile to <tt>~/.recluse/NAME.yaml</tt>.
 		def save
 			uconf = UserConfig.new '.recluse'
 			fname = "#{@name}.yaml"
@@ -168,6 +219,9 @@ module Recluse
 			options['scheme_squash'] = @scheme_squash
 			options.save
 		end
+
+		##
+		# Loads profile by name.
 		def self.load(profile)
 			SafeYAML::OPTIONS[:default_mode] = :safe
 			uconf = UserConfig.new '.recluse'

@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.authors       = ["James Anthony Bruno"]
   spec.email         = ["j.bruno.che@gmail.com"]
 
-  spec.summary       = %q{Friendly, neighborhood web crawler for broken link detection.}
+  spec.summary       = %q{Friendly, neighborhood web crawler for quality assurance.}
   spec.homepage      = Recluse::URL
   spec.license       = "MIT"
 

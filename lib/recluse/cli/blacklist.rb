@@ -3,7 +3,7 @@ require 'safe_yaml'
 require 'user_config'
 
 module Recluse
-	module CLI
+	module CLI #:nodoc: all
 		SafeYAML::OPTIONS[:default_mode] = :safe
 		class Blacklist < Thor
 			desc "add pattern1 [pattern2] ...", "add glob patterns to blacklist"
@@ -11,7 +11,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
 					puts "Profile #{name} doesn't exist"
-					exit -1
+					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
 				if profile.has_key?('blacklist')
@@ -26,7 +26,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
 					puts "Profile #{name} doesn't exist"
-					exit -1
+					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
 				if profile.has_key?('blacklist')
@@ -39,7 +39,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
 					puts "Profile #{name} doesn't exist"
-					exit -1
+					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
 				profile['blacklist'] = []
@@ -50,7 +50,7 @@ module Recluse
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
 					puts "Profile #{name} doesn't exist"
-					exit -1
+					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
 				if profile.has_key?('blacklist')

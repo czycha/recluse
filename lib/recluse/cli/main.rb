@@ -31,7 +31,7 @@ module Recluse
 						end
 						puts "Total pages:\t#{report.keys.length}"
 						puts "Matched URLs:\t#{child_count}"
-						puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}"
+						puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}%"
 					else
 						counts = {}
 						report = profile.results.children

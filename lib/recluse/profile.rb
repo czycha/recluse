@@ -7,6 +7,7 @@ require 'addressable/uri'
 require 'mechanize'
 require 'colorize'
 require 'user_config'
+require 'ruby-progressbar'
 
 module Recluse
 	##
@@ -50,6 +51,10 @@ module Recluse
 		attr_accessor :results
 
 		##
+		# When enabled, will follow redirects and report only the status code for the page that is landed upon. When disabled, will report the redirect status code. Defaults to +false+.
+		attr_accessor :redirect
+
+		##
 		# Create a profile.
 		def initialize(
 				name, 
@@ -58,7 +63,8 @@ module Recluse
 				blacklist: [], 
 				whitelist: [], 
 				internal_only: false,
-				scheme_squash: false
+				scheme_squash: false,
+				redirect: false
 			)
 			@name = name
 			@email = email
@@ -71,6 +77,7 @@ module Recluse
 			@whitelist = whitelist
 			@internal_only = internal_only
 			@scheme_squash = scheme_squash
+			@redirect = redirect
 			@results = WeirdTree.new
 		end
 
@@ -83,6 +90,7 @@ module Recluse
 				a.max_history = nil
 				a.follow_meta_refresh = true
 				a.keep_alive = false
+				a.redirect_ok = @redirect
 				a.user_agent = "Mozilla/5.0 (compatible; recluse/#{Recluse::VERSION}; +#{Recluse::URL}) #{@email}"
 			end
 		end
@@ -90,7 +98,7 @@ module Recluse
 		##
 		# Main runner. Starting from the roots, goes through each runnable link and records the referrer, the status code, and any errors.
 		# Results are saved in <tt>@results</tt>.
-		def run
+		def run quiet: false
 			queue = @roots.map { |url| Link.new(url, :root) }
 			addrroot = @roots.map { |url| Addressable::URI.parse url }
 			raise ProfileError.new("No roots to start from") if queue.length < 1
@@ -122,41 +130,38 @@ module Recluse
 				begin
 					page = agent.get element.absolute
 					result.code = page.code
-					queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } if internal and page.class != Mechanize::File
+					if @redirect
+						result_link = Link.new(page.uri.to_s, element.parent)
+						internal = result_link.internal?(addrroot)
+					end
+					queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } if internal and page.class != Mechanize::File and page.class != Mechanize::Image
 				rescue Mechanize::ResponseCodeError => code
 					result.code = code.response_code
 				rescue => e
 					result.error = e
 				end
 				@results.set_child_value element.absolute, result
-				case (result.code.to_i / 100)
-				when 2
-					color = :green
-				when 3
-					color = :yellow
-				when 4, 5
-					color = :red
-				else
-					color = :blue
+				unless quiet
+					puts "[#{@name.colorize(:mode => :bold)}][#{result.code.colorize(:color => result.color, :mode => :bold)}][#{(internal ? 'internal' : 'external').colorize(:mode => :bold)}] #{element.absolute}"
+					puts "\a^ #{"Error".colorize(:mode => :bold, :color => :red)}: #{result.error}" unless result.error == false
 				end
-				puts "[#{@name.colorize(:mode => :bold)}][#{result.code.colorize(:color => color, :mode => :bold)}][#{(internal ? 'internal' : 'external').colorize(:mode => :bold)}] #{element.absolute}"
-				puts "\a^ #{"Error".colorize(:mode => :bold, :color => :red)}: #{result.error}" unless result.error == false
 			end
 		end
 
 		##
 		# Find links matching glob patterns, starting from the roots. Overrides (but does not overwrite) +internal_only+ behavior to +true+.
-		def find glob
+		def find glob, quiet: false
 			queue = @roots.map { |url| Link.new(url, :root) }
 			addrroot = @roots.map { |url| Addressable::URI.parse url }
 			raise ProfileError.new("No roots to start from") if queue.length < 1
+			progress = ProgressBar.create(total: nil, format: "|%B|") unless quiet
 			agent = create_agent
 			while queue.length >= 1
 				element = queue.shift
 				match = element.match? glob
 				if match
 					@results.add element.absolute, element.parent
-					puts "[#{@name.colorize(:mode => :bold)}][#{"found".colorize(:color => :green, :mode => :bold)}] #{element.parent} => #{element.absolute}"
+					progress.log "[#{@name.colorize(:mode => :bold)}][#{"found".colorize(:color => :green, :mode => :bold)}] #{element.parent} => #{element.absolute}" unless quiet
 				end
 				next unless element.run?(@blacklist, @whitelist) 
 				internal = element.internal?(addrroot)
@@ -181,27 +186,27 @@ module Recluse
 				begin
 					page = agent.get element.absolute
 					result.code = page.code
-					queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } unless page.class == Mechanize::File
+					if @redirect
+						result_link = Link.new(page.uri.to_s, element.parent)
+						next unless result_link.internal?(addroot)
+					end
+					queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } unless page.class == Mechanize::File or page.class == Mechanize::Image
 				rescue Mechanize::ResponseCodeError => code
 					result.code = code.response_code
 				rescue => e
 					result.error = e
 				end
-				case (result.code.to_i / 100)
-				when 2
-					color = :green
-				when 3
-					color = :yellow
-				when 4, 5
-					color = :red
-				else
-					color = :blue
-				end
-				unless result.error == false
-					puts "[#{@name.colorize(:mode => :bold)}][#{result.code.colorize(:color => color, :mode => :bold)}] #{element.absolute}"
-					puts "\a^ #{"Error".colorize(:mode => :bold, :color => :red)}: #{result.error}"
+				progress.increment unless quiet
+				unless quiet or result.error == false
+					progress.log "[#{@name.colorize(:mode => :bold)}][#{result.code.colorize(:color => result.color, :mode => :bold)}] #{element.absolute}"
+					progress.log "\a^ #{"Error".colorize(:mode => :bold, :color => :red)}: #{result.error}"
 				end
 			end
+		end
+
+		##
+		# Asserts existence of CSS selector.
+		def assert selector
 		end
 
 		##
@@ -227,7 +232,7 @@ module Recluse
 			uconf = UserConfig.new '.recluse'
 			raise ProfileError.new("Profile '#{profile}' doesn't exist") unless uconf.exist?("#{profile}.yaml")
 			options = uconf["#{profile}.yaml"]
-			expects = [:blacklist, :whitelist, :internal_only, :scheme_squash]
+			expects = [:blacklist, :whitelist, :internal_only, :scheme_squash, :redirect]
 			opts = {}
 			for e in expects
 				estr = e.to_s

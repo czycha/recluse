@@ -3,9 +3,11 @@ require 'safe_yaml'
 require 'user_config'
 
 module Recluse
-	module CLI #:nodoc: all
+	module CLI
 		SafeYAML::OPTIONS[:default_mode] = :safe
-		class Blacklist < Thor
+		##
+		# Blacklist related commands.
+		class Blacklist < Thor #:nodoc: all
 			desc "add pattern1 [pattern2] ...", "add glob patterns to blacklist"
 			def add(name, *patterns)
 				uconf = UserConfig.new '.recluse'

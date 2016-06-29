@@ -7,13 +7,16 @@ require 'safe_yaml'
 require 'user_config'
 
 module Recluse
-	module CLI #:nodoc: all
+	module CLI
 		SafeYAML::OPTIONS[:default_mode] = :safe
-		class Profile < Thor
+		##
+		# Commands to edit/create/delete profiles.
+		class Profile < Thor #:nodoc: all
 			method_option :blacklist, :type => :array, :desc => "Glob patterns for URLs to ignore", :default => []
 			method_option :whitelist, :type => :array, :desc => "Glob pattern exceptions to blacklist", :default => []
 			method_option :internal_only, :type => :boolean, :desc => "Only check internal URLs", :default => false
 			method_option :scheme_squash, :type => :boolean, :desc => "HTTP and HTTPS URLs are treated as equals", :default => false
+			method_option :redirect, :type => :boolean, :desc => "Follow redirects and report final status code", :default => false
 			desc "create [options] name email root1 [root2] ...", "create profile"
 			def create(name, email, *roots)
 				uconf = UserConfig.new '.recluse'
@@ -29,7 +32,8 @@ module Recluse
 						blacklist: options["blacklist"],
 						whitelist: options["whitelist"],
 						internal_only: options["internal_only"],
-						scheme_squash: options["scheme_squash"]
+						scheme_squash: options["scheme_squash"],
+						redirect: options["redirect"]
 					)
 					profile.save
 				rescue ProfileError => e
@@ -52,6 +56,7 @@ module Recluse
 			method_option :scheme_squash, :type => :boolean, :desc => "HTTP and HTTPS URLs are treated as equals"
 			method_option :roots, :type => :array, :desc => "Roots to start the spidering at"
 			method_option :email, :type => :string, :desc => "Email to identify spider for system admins"
+			method_option :redirect, :type => :boolean, :desc => "Follow redirects and report final status code"
 			desc "edit name [options]", "edit profile"
 			def edit(name)
 				begin
@@ -65,6 +70,7 @@ module Recluse
 				profile.whitelist = options["whitelist"] if options.has_key? "whitelist"
 				profile.internal_only = options["internal_only"] if options.has_key? "internal_only"
 				profile.scheme_squash = options["scheme_squash"] if options.has_key? "scheme_squash"
+				profile.redirect = options["redirect"] if options.has_key? "redirect"
 				profile.email = options["email"] if options.has_key? "email"
 				profile.save
 			end

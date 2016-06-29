@@ -22,5 +22,21 @@ module Recluse
 		def inspect
 			@code
 		end
+
+		##
+		# Color based on code.
+		def color
+			case (@code.to_i / 100)
+			when 2
+				color = :green
+			when 3
+				color = :yellow
+			when 4, 5
+				color = :red
+			else
+				color = :blue
+			end
+			color
+		end
 	end
 end

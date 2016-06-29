@@ -7,8 +7,10 @@ require 'user_config'
 module Recluse
 	##
 	# Command-line interface segments.
-	module CLI #:nodoc: all
-		class Main < Thor
+	module CLI
+		##
+		# Main commands.
+		class Main < Thor #:nodoc: all
 			no_commands do
 				def perc(num, den)
 					(num * 100.0 / den).round(2)
@@ -58,7 +60,7 @@ module Recluse
 						end
 						puts "Total:\t#{report.length}"
 						counts.each do |code, count|
-							puts "#{code}:\t#{count.to_i}\t#{perc count report.length}%"
+							puts "#{code}:\t#{count.to_i}\t#{perc count, report.length}%"
 						end
 					end
 				end
@@ -66,10 +68,6 @@ module Recluse
 			method_option :find, :type => :array, :aliases => "-f", :banner => "GLOB", :desc => "Find links matching any of the globs"
 			desc "report csv_path profile1 [profile2] ...", "runs profile report"
 			def report(csv_path, *profiles)
-				# puts "csv_path:\t#{csv_path}"
-				# puts "profiles:\t#{profiles.to_s}"
-				# puts "options:"
-				# puts options.to_s
 				if profiles.length == 0
 					puts "No profile provided"
 					exit(-1)

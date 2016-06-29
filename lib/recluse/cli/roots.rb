@@ -3,9 +3,11 @@ require 'safe_yaml'
 require 'user_config'
 
 module Recluse
-	module CLI #:nodoc: all
+	module CLI
 		SafeYAML::OPTIONS[:default_mode] = :safe
-		class Roots < Thor
+		##
+		# Roots related commands.
+		class Roots < Thor #:nodoc: all
 			desc "add pattern1 [pattern2] ...", "add to roots"
 			def add(name, *roots)
 				uconf = UserConfig.new '.recluse'

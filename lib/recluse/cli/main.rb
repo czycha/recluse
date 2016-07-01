@@ -57,11 +57,11 @@ module Recluse
 							end
 						end
 					end
-					puts "Total pages:\t#{report.keys.length}"
+					puts "Total pages:\t#{profile.results.parents.keys.length}"
 					puts "Matched URLs:\t#{child_count}"
 					puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}%"
 				end
-				def no_find_save(profile, csv_path, group_by: :none)
+				def status_save(profile, csv_path, group_by: :none)
 					puts "Saving report..."
 					counts = {}
 					case group_by
@@ -105,6 +105,32 @@ module Recluse
 						puts "#{code}:\t#{count.to_i}\t#{perc count, report.length}%"
 					end
 				end
+				def assert_save(profile, csv_path)
+					puts "Saving report..."
+					report = profile.results.children
+					counts = {}
+					CSV.open(csv_path, "w+") do |csv|
+						csv << ["Selector", "Exists", "On page"]
+						report.each do |child, info|
+							val = info[:value]
+							unless val.nil?
+								val.each do |selector, exists|
+									counts[selector] = {"true" => 0, "false" => 0} unless counts.key? selector
+									counts[selector][exists.to_s] += 1
+									csv << [selector, exists.to_s, child]
+								end
+							end
+						end
+					end
+					puts "Total pages:\t#{report.keys.length}"
+					counts.each do |selector, info|
+						puts "#{selector}:"
+						puts "- True:    #{counts[selector]["true"]}\t#{perc counts[selector]["true"], report.keys.length}%"
+						puts "- False:   #{counts[selector]["false"]}\t#{perc counts[selector]["false"], report.keys.length}%"
+						unknown = report.keys.length - counts[selector]["false"] - counts[selector]["true"]
+						puts "- Unknown: #{unknown}\t#{perc (unknown), report.keys.length}%"
+					end
+				end
 			end
 			method_option :group_by, :type => :string, :aliases => "-g", :default => "none", :enum => ["none", "url"], :desc => "Group by key"
 			desc "status csv_path profile1 [profile2] ...", "runs report on link statuses"
@@ -125,7 +151,7 @@ module Recluse
 					exit -1
 				end
 				ending = Proc.new do
-					no_find_save profile, csv_path, group_by: options["group_by"].to_sym
+					status_save profile, csv_path, group_by: options["group_by"].to_sym
 					exit
 				end
 				for sig in ['INT', 'TERM']
@@ -171,6 +197,42 @@ module Recluse
 				for i in 0...profile_queue.length
 					profile.results = profile_queue[i - 1].results unless i == 0
 					profile.find options["globs"]
+					profile = profile_queue[i + 1] if i + 1 < profile_queue.length
+				end
+				for sig in ['INT', 'TERM']
+					Signal.trap sig, 'DEFAULT'
+				end
+				ending.call
+			end
+			method_option :exists, :type => :array, :aliases => "-e", :required => true, :banner => "SELECTOR", :desc => "Assert existence of HTML elements matching CSS selector"
+			desc "assert csv_path profile1 [profile2] ... --exists selector1 [selector2] ...", "assert HTML element existence"
+			def assert(csv_path, *profiles)
+				if profiles.length == 0
+					puts "No profile provided"
+					exit(-1)
+				end
+				begin
+					profile_queue = profiles.map { |profile_name| Recluse::Profile.load profile_name }
+				rescue ProfileError => e
+					puts e
+					exit(-1)
+				end
+				profile = profile_queue[0]
+				has_selectors = options["exists"].any? { |selector| selector.strip.length > 0 }
+				unless has_selectors
+					puts "No selector patterns provided for --exists option"
+					exit(-1)
+				end
+				ending = Proc.new do
+					assert_save profile, csv_path
+					exit
+				end
+				for sig in ['INT', 'TERM']
+					Signal.trap sig, &ending
+				end
+				for i in 0...profile_queue.length
+					profile.results = profile_queue[i - 1].results unless i == 0
+					profile.assert options["exists"]
 					profile = profile_queue[i + 1] if i + 1 < profile_queue.length
 				end
 				for sig in ['INT', 'TERM']

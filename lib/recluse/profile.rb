@@ -205,8 +205,67 @@ module Recluse
 		end
 
 		##
-		# Asserts existence of CSS selector.
-		def assert selector
+		# Asserts existence of CSS selectors.
+		def assert selectors, quiet: false
+			queue = @roots.map { |url| Link.new(url, :root) }
+			addrroot = @roots.map { |url| Addressable::URI.parse url }
+			raise ProfileError.new("No roots to start from") if queue.length < 1
+			agent = create_agent
+			while queue.length >= 1
+				element = queue.shift
+				internal = element.internal?(addrroot)
+				next unless element.run?(@blacklist, @whitelist) and internal
+				if @results.has_child?(element.absolute)
+					next
+				else
+					if @scheme_squash
+						alt = element.address
+						if alt.scheme == "http"
+							alt.scheme = "https"
+						else
+							alt.scheme = "http"
+						end
+						if @results.has_child?(alt.to_s)
+							next
+						end
+					end
+				end
+				@results.add_child element.absolute
+				existence = nil
+				result = Result.new "idk", false
+				begin
+					page = agent.get element.absolute
+					result.code = page.code
+					if @redirect
+						result_link = Link.new(page.uri.to_s, element.parent)
+						next unless result_link.internal?(addroot)
+					end
+					unless page.class == Mechanize::File or page.class == Mechanize::Image
+						existence = {}
+						selectors.each do |selector|
+							existence[selector] = page.css(selector).length > 0
+						end
+						@results.set_child_value element.absolute, existence
+						queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) }
+					end
+				rescue Mechanize::ResponseCodeError => code
+					result.code = code.response_code
+				rescue => e
+					result.error = e
+				end
+				unless quiet
+					if result.error != false
+						puts "[#{@name.colorize(:mode => :bold)}][#{result.code.colorize(:color => result.color, :mode => :bold)}] #{element.absolute}"
+						puts "\a^ #{"Error".colorize(:mode => :bold, :color => :red)}: #{result.error}"
+					else
+						unless existence.nil?
+							existence.each do |selector, exists|
+								puts "[#{@name.colorize(:mode => :bold)}][#{selector.colorize(:mode => :bold)}][#{exists.to_s.colorize(:color => (exists ? :green : :red), :mode => :bold)}] #{element.absolute}"
+							end
+						end
+					end
+				end
+			end
 		end
 
 		##

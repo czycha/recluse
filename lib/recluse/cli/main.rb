@@ -15,59 +15,100 @@ module Recluse
 				def perc(num, den)
 					(num * 100.0 / den).round(2)
 				end
-				def save(profile, csv_path, find: false)
-					puts "Saving report..."
-					if find
+				def find_save(profile, csv_path, group_by: :none)
+					puts "\nSaving report..."
+					child_count = 0
+					parent_count = 0
+					case group_by
+					when :page
 						report = profile.results.parents
-						child_count = 0
-						parent_count = 0
 						CSV.open(csv_path, "w+") do |csv|
 							csv << ["Page", "Matching URLs"]
 							report.each do |parent, children|
-								child_count += children.length
 								unless children.length == 0
+									child_count += children.length
 									csv << [parent, children.join("\n")]
 									parent_count += 1
 								end
 							end
 						end
-						puts "Total pages:\t#{report.keys.length}"
-						puts "Matched URLs:\t#{child_count}"
-						puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}%"
-					else
-						counts = {}
+					when :none
+						report = profile.results.parents
+						CSV.open(csv_path, "w+") do |csv|
+							csv << ["Matching URL", "Page"]
+							report.each do |parent, children|
+								child_count += children.length
+								children.each do |child|
+									csv << [child, parent]
+								end
+								parent_count += 1
+							end
+						end
+					when :url
 						report = profile.results.children
 						CSV.open(csv_path, "w+") do |csv|
-							csv << ["Status code", "URL", "On pages", "With error"]
+							csv << ["Matching URL", "Pages"]
 							report.each do |child, info|
-								val = info[:value]
-								if val.nil?
-									status = "idk"
-									error = "Uncomplete"
-								else
-									status = val.code
-									error = val.error
-								end
-								unless (status.to_i / 100) == 2
-									csv << [status, child, info[:parents].join("\n"), error || ""]
-								end
-								if counts.has_key?(status)
-									counts[status] += 1.0
-								else
-									counts[status] = 1.0
+								child_count += 1
+								unless info[:parents].length == 0
+									csv << [child, info[:parents].join("\n")]
+									parent_count += info[:parents].length
 								end
 							end
 						end
-						puts "Total:\t#{report.length}"
-						counts.each do |code, count|
-							puts "#{code}:\t#{count.to_i}\t#{perc count, report.length}%"
+					end
+					puts "Total pages:\t#{report.keys.length}"
+					puts "Matched URLs:\t#{child_count}"
+					puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}%"
+				end
+				def no_find_save(profile, csv_path, group_by: :none)
+					puts "Saving report..."
+					counts = {}
+					case group_by
+					when :url
+						page_label = "On pages"
+						to_csv = Proc.new do |csv, status, child, parents, error|
+							csv << [status, child, parents.join("\n"), error || ""]
 						end
+					when :none
+						page_label = "On page"
+						to_csv = Proc.new do |csv, status, child, parents, error|
+							parents.each do |parent|
+								csv << [status, child, parent, error || ""]
+							end
+						end
+					end
+					report = profile.results.children
+					CSV.open(csv_path, "w+") do |csv|
+						csv << ["Status code", "URL", page_label, "With error"]
+						report.each do |child, info|
+							val = info[:value]
+							if val.nil?
+								status = "idk"
+								error = "Incomplete"
+							else
+								status = val.code
+								error = val.error
+							end
+							unless (status.to_i / 100) == 2
+								to_csv.call(csv, status, child, info[:parents], error)
+							end
+							if counts.has_key?(status)
+								counts[status] += 1.0
+							else
+								counts[status] = 1.0
+							end
+						end
+					end
+					puts "Total:\t#{report.length}"
+					counts.each do |code, count|
+						puts "#{code}:\t#{count.to_i}\t#{perc count, report.length}%"
 					end
 				end
 			end
-			method_option :find, :type => :array, :aliases => "-f", :banner => "GLOB", :desc => "Find links matching any of the globs"
-			desc "report csv_path profile1 [profile2] ...", "runs profile report"
-			def report(csv_path, *profiles)
+			method_option :group_by, :type => :string, :aliases => "-g", :default => "none", :enum => ["none", "url"], :desc => "Group by key"
+			desc "status csv_path profile1 [profile2] ...", "runs report on link statuses"
+			def status(csv_path, *profiles)
 				if profiles.length == 0
 					puts "No profile provided"
 					exit(-1)
@@ -79,37 +120,63 @@ module Recluse
 					exit(-1)
 				end
 				profile = profile_queue[0]
-				Signal.trap 'INT' do
-					save profile, csv_path, find: options.has_key?("find")
+				if options["group_by"] == "page"
+					puts "Page grouping only available with --find."
+					exit -1
+				end
+				ending = Proc.new do
+					no_find_save profile, csv_path, group_by: options["group_by"].to_sym
 					exit
 				end
-				Signal.trap 'TERM' do
-					save profile, csv_path, find: options.has_key?("find")
+				for sig in ['INT', 'TERM']
+					Signal.trap sig, &ending
+				end
+				for i in 0...profile_queue.length
+					profile.results = profile_queue[i - 1].results unless i == 0
+					profile.run
+					profile = profile_queue[i + 1] if i + 1 < profile_queue.length
+				end
+				for sig in ['INT', 'TERM']
+					Signal.trap sig, 'DEFAULT'
+				end
+				ending.call
+			end
+			method_option :globs, :type => :array, :aliases => "-G", :required => true, :banner => "GLOB", :desc => "Find links matching any of the globs"
+			method_option :group_by, :type => :string, :aliases => "-g", :default => "none", :enum => ["none", "url", "page"], :desc => "Group by key"
+			desc "find csv_path profile1 [profile2] ... --globs glob1 [glob2] ...", "find matching links"
+			def find(csv_path, *profiles)
+				if profiles.length == 0
+					puts "No profile provided"
+					exit(-1)
+				end
+				begin
+					profile_queue = profiles.map { |profile_name| Recluse::Profile.load profile_name }
+				rescue ProfileError => e
+					puts e
+					exit(-1)
+				end
+				profile = profile_queue[0]
+				has_globs = options["globs"].any? { |glob| glob.strip.length > 0 }
+				unless has_globs
+					puts "No glob patterns provided for --globs option"
+					exit(-1)
+				end
+				ending = Proc.new do
+					find_save profile, csv_path, group_by: options["group_by"].to_sym
 					exit
 				end
-				if options.has_key?("find")
-					has_globs = options["find"].any? { |glob| glob.strip.length > 0 }
-					unless has_globs
-						Signal.trap 'INT', 'DEFAULT'
-						Signal.trap 'TERM', 'DEFAULT'
-						puts "No glob patterns provided for --find option"
-						exit(-1)
-					end
-					for i in 0...profile_queue.length
-						profile.results = profile_queue[i - 1].results unless i == 0
-						profile.find options["find"]
-						profile = profile_queue[i + 1] if i + 1 < profile_queue.length
-					end
-				else
-					for i in 0...profile_queue.length
-						profile.results = profile_queue[i - 1].results unless i == 0
-						profile.run
-						profile = profile_queue[i + 1] if i + 1 < profile_queue.length
-					end
+				for sig in ['INT', 'TERM']
+					Signal.trap sig, &ending
 				end
-				Signal.trap 'INT', 'DEFAULT'
-				Signal.trap 'TERM', 'DEFAULT'
-				save profile, csv_path, find: options.has_key?("find")
+				for i in 0...profile_queue.length
+					profile.results = profile_queue[i - 1].results unless i == 0
+					profile.find options["globs"]
+					profile = profile_queue[i + 1] if i + 1 < profile_queue.length
+				end
+				for sig in ['INT', 'TERM']
+					Signal.trap sig, 'DEFAULT'
+				end
+				ending.call
 			end
 			desc "where", "location of profiles"
 			def where

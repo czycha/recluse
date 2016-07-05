@@ -295,12 +295,12 @@ module Recluse
 			opts = {}
 			for e in expects
 				estr = e.to_s
-				opts[e] = options[estr] if options.has_key?(estr) and not options[estr].nil?
+				opts[e] = options[estr] if options.key?(estr) and not options[estr].nil?
 			end
 			ret = Profile.new(
 				profile, 
-				((options.has_key?('roots') and not options['roots'].nil?) ? options['roots'] : []),
-				((options.has_key?('email') and not options['email'].nil?) ? options['email'] : ''),
+				((options.key?('roots') and not options['roots'].nil?) ? options['roots'] : []),
+				((options.key?('email') and not options['email'].nil?) ? options['email'] : ''),
 				**opts
 			)
 			return ret

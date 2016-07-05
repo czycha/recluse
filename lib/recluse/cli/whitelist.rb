@@ -16,7 +16,7 @@ module Recluse
 					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
-				if profile.has_key?('whitelist')
+				if profile.key?('whitelist')
 					profile['whitelist'] += patterns
 				else
 					profile['whitelist'] = patterns
@@ -31,7 +31,7 @@ module Recluse
 					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
-				if profile.has_key?('whitelist')
+				if profile.key?('whitelist')
 					profile['whitelist'] -= patterns
 					profile.save
 				end
@@ -55,7 +55,7 @@ module Recluse
 					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
-				if profile.has_key?('whitelist')
+				if profile.key?('whitelist')
 					profile['whitelist'].each { |pattern| puts pattern }
 				end
 			end

@@ -5,5 +5,5 @@ module Recluse
 
 	##
 	# Homepage of the gem (also used in user-agent).
-	URL = "https://github.com/EVA-01/recluse"
+	URL = "https://github.com/czycha/recluse"
 end

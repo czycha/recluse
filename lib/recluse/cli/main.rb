@@ -97,7 +97,7 @@ module Recluse
 							unless (status.to_i / 100) == 2
 								to_csv.call(csv, status, child, info[:parents], error)
 							end
-							if counts.has_key?(status)
+							if counts.key?(status)
 								counts[status] += 1.0
 							else
 								counts[status] = 1.0

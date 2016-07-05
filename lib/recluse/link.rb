@@ -45,9 +45,9 @@ module Recluse
 				else
 					a2.scheme = "https"
 				end
-				return addrroots.any? { |root| (root.route_to(@address) != @address or root.route_to(a2) != a2) }
+				return addrroots.none? { |root| (root.route_to(@address) == @address and root.route_to(a2) == a2) }
 			else
-				return addrroots.any? { |root| root.route_to(@address) != @address }
+				return addrroots.none? { |root| root.route_to(@address) == @address }
 			end
 		end
 
@@ -55,30 +55,13 @@ module Recluse
 		# Is the link runnable compared to the black- and whitelists, and the link scheme? 
 		def run?(blacklist, whitelist)
 			return false unless @address.scheme == 'http' or @address.scheme == 'https'
-			pending = false
-			blacklist.each do |glob|
-				if File.fnmatch(glob, @absolute)
-					pending = true
-					break
-				end
-			end
-			if pending
-				whitelist.each do |glob|
-					if File.fnmatch(glob, @absolute)
-						pending = false
-						break
-					end
-				end
-			end
-			return (not pending)
+			return not match?(blacklist) or match?(whitelist)
 		end
 
 		##
 		# Does the link match any of the globs?
 		def match?(globs)
-			[*globs].any? do |glob|
-				File.fnmatch(glob, @absolute)
-			end
+			[*globs].any? { |glob| File.fnmatch(glob, @absolute) }
 		end
 	end
 end

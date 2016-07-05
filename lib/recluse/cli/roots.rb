@@ -16,7 +16,7 @@ module Recluse
 					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
-				if profile.has_key?('roots')
+				if profile.key?('roots')
 					profile['roots'] += roots
 				else
 					profile['roots'] = roots
@@ -31,7 +31,7 @@ module Recluse
 					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
-				if profile.has_key?('roots')
+				if profile.key?('roots')
 					profile['roots'] -= roots
 					profile.save
 				end
@@ -44,7 +44,7 @@ module Recluse
 					exit(-1)
 				end
 				profile = uconf["#{name}.yaml"]
-				if profile.has_key?('roots')
+				if profile.key?('roots')
 					profile['roots'].each { |root| puts root }
 				end
 			end

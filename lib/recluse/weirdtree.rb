@@ -12,7 +12,7 @@ module Recluse
 		##
 		# Add child associated with parent(s).
 		def add(child, parents)
-			unless @child_keys.has_key?(child)
+			unless @child_keys.key?(child)
 				@child_keys[child] = {
 					:value => nil,
 					:parents => []
@@ -20,7 +20,7 @@ module Recluse
 			end
 			@child_keys[child][:parents] += [*parents]
 			[*parents].each do |parent|
-				@parent_keys[parent] = [] unless @parent_keys.has_key?(parent)
+				@parent_keys[parent] = [] unless @parent_keys.key?(parent)
 				@parent_keys[parent] << child
 			end
 		end
@@ -29,7 +29,7 @@ module Recluse
 		# Add parent with no children.
 		def add_parent(parents)
 			[*parents].each do |parent|
-				@parent_keys[parent] = [] unless @parent_keys.has_key?(parent)
+				@parent_keys[parent] = [] unless @parent_keys.key?(parent)
 			end
 		end
 
@@ -37,7 +37,7 @@ module Recluse
 		# Add child with no value and no parents.
 		def add_child(children)
 			[*children].each do |child|
-				unless @child_keys.has_key?(child)
+				unless @child_keys.key?(child)
 					@child_keys[child] = {
 						:value => nil,
 						:parents => []
@@ -95,19 +95,19 @@ module Recluse
 		##
 		# Does element exist as a child and/or parent key?
 		def has?(element)
-			@parent_keys.has_key?(element) or @child_keys.has_key?(element)
+			@parent_keys.key?(element) or @child_keys.key?(element)
 		end
 
 		##
 		# Is element a child?
 		def has_child?(element)
-			@child_keys.has_key?(element)
+			@child_keys.key?(element)
 		end
 
 		##
 		# Is element a parent?
 		def has_parent?(element)
-			@parent_keys.has_key?(element)
+			@parent_keys.key?(element)
 		end
 	end
 end

@@ -65,13 +65,13 @@ module Recluse
 					puts e
 					exit(-1)
 				end
-				profile.roots = options["roots"] if options.has_key? "roots"
-				profile.blacklist = options["blacklist"] if options.has_key? "blacklist"
-				profile.whitelist = options["whitelist"] if options.has_key? "whitelist"
-				profile.internal_only = options["internal_only"] if options.has_key? "internal_only"
-				profile.scheme_squash = options["scheme_squash"] if options.has_key? "scheme_squash"
-				profile.redirect = options["redirect"] if options.has_key? "redirect"
-				profile.email = options["email"] if options.has_key? "email"
+				profile.roots = options["roots"] if options.key? "roots"
+				profile.blacklist = options["blacklist"] if options.key? "blacklist"
+				profile.whitelist = options["whitelist"] if options.key? "whitelist"
+				profile.internal_only = options["internal_only"] if options.key? "internal_only"
+				profile.scheme_squash = options["scheme_squash"] if options.key? "scheme_squash"
+				profile.redirect = options["redirect"] if options.key? "redirect"
+				profile.email = options["email"] if options.key? "email"
 				profile.save
 			end
 			desc "rename old_name new_name", "rename profile"

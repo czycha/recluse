@@ -3,6 +3,7 @@ require 'recluse/profile'
 require 'recluse/cli/profile'
 require 'csv'
 require 'user_config'
+require 'set'
 
 module Recluse
 	##
@@ -41,25 +42,28 @@ module Recluse
 								children.each do |child|
 									csv << [child, parent]
 								end
-								parent_count += 1
+								parent_count += 1 if children.length > 0
 							end
 						end
 					when :url
 						report = profile.results.children
 						CSV.open(csv_path, "w+") do |csv|
 							csv << ["Matching URL", "Pages"]
+							parents = Set.new
 							report.each do |child, info|
 								child_count += 1
 								unless info[:parents].length == 0
 									csv << [child, info[:parents].join("\n")]
-									parent_count += info[:parents].length
+									parents += info[:parents]
 								end
 							end
+							parent_count = parents.length
 						end
 					end
-					puts "Total pages:\t#{profile.results.parents.keys.length}"
+					total = profile.results.parents.keys.length
+					puts "Total pages:\t#{total}"
 					puts "Matched URLs:\t#{child_count}"
-					puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, report.keys.length}%"
+					puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, total}%"
 				end
 				def status_save(profile, csv_path, group_by: :none)
 					puts "Saving report..."

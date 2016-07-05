@@ -163,7 +163,7 @@ module Recluse
 				end
 				for i in 0...profile_queue.length
 					profile.results = profile_queue[i - 1].results unless i == 0
-					profile.run
+					profile.status
 					profile = profile_queue[i + 1] if i + 1 < profile_queue.length
 				end
 				for sig in ['INT', 'TERM']

@@ -96,9 +96,9 @@ module Recluse
 		end
 
 		##
-		# Main runner. Starting from the roots, goes through each runnable link and records the referrer, the status code, and any errors.
+		# Starting from the roots, goes through each runnable link and records the referrer, the status code, and any errors.
 		# Results are saved in <tt>@results</tt>.
-		def run quiet: false
+		def status quiet: false
 			queue = @roots.map { |url| Link.new(url, :root) }
 			addrroot = @roots.map { |url| Addressable::URI.parse url }
 			raise ProfileError.new("No roots to start from") if queue.length < 1

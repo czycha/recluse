@@ -108,7 +108,7 @@ module Recluse
 				next unless element.run?(@blacklist, @whitelist) 
 				internal = element.internal?(addrroot)
 				next if @internal_only and not internal
-				if @results.has_child?(element.absolute)
+				if @results.child?(element.absolute)
 					@results.add element.absolute, element.parent
 					next
 				else
@@ -120,7 +120,7 @@ module Recluse
 						else
 							alt.scheme = "http"
 						end
-						if @results.has_child?(alt.to_s)
+						if @results.child?(alt.to_s)
 							@results.set_child_value element.absolute, @results.get_child_value(alt.to_s)
 							next
 						end
@@ -166,7 +166,7 @@ module Recluse
 				next unless element.run?(@blacklist, @whitelist) 
 				internal = element.internal?(addrroot)
 				next if not internal
-				if @results.has_parent?(element.absolute)
+				if @results.parent?(element.absolute)
 					next
 				else
 					if @scheme_squash
@@ -176,7 +176,7 @@ module Recluse
 						else
 							alt.scheme = "http"
 						end
-						if @results.has_parent?(alt.to_s)
+						if @results.parent?(alt.to_s)
 							next
 						end
 					end
@@ -215,7 +215,7 @@ module Recluse
 				element = queue.shift
 				internal = element.internal?(addrroot)
 				next unless element.run?(@blacklist, @whitelist) and internal
-				if @results.has_child?(element.absolute)
+				if @results.child?(element.absolute)
 					next
 				else
 					if @scheme_squash
@@ -225,7 +225,7 @@ module Recluse
 						else
 							alt.scheme = "http"
 						end
-						if @results.has_child?(alt.to_s)
+						if @results.child?(alt.to_s)
 							next
 						end
 					end

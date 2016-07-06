@@ -100,14 +100,55 @@ module Recluse
 
 		##
 		# Is element a child?
-		def has_child?(element)
+		def child?(element)
 			@child_keys.key?(element)
 		end
 
 		##
 		# Is element a parent?
-		def has_parent?(element)
+		def parent?(element)
 			@parent_keys.key?(element)
+		end
+
+		##
+		# Delete child. Removes references to child in associated parents.
+		def delete_child(element)
+			if @child_keys.key?(element)
+				@child_keys[element[:parents].each do |parent|
+					@parent_keys[parent] -= [element]
+				end
+				@child_keys.delete element
+			end
+		end
+
+		##
+		# Delete parent. Removes references to parent in associated children.
+		def delete_parent(element)
+			if @parent_keys.key?(element)
+				@parent_keys[element].each do |child|
+					@child_keys[child] -= [element]
+				end
+				@parent_keys.delete element
+			end
+		end
+
+		##
+		# Delete from parents and children. Essentially removes all known references.
+		def delete(element)
+			delete_child(element)
+			delete_parent(element)
+		end
+
+		##
+		# Finds children without parents.
+		def orphans
+			@child_keys.select { |key, info| info[:parents].length == 0 }.keys
+		end
+
+		##
+		# Finds parents without children.
+		def childless
+			@parent_keys.select { |key, children| children.length == 0 }.keys
 		end
 	end
 end

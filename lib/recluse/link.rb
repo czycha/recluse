@@ -67,32 +67,26 @@ module Recluse
 		private
 
 		##
-		# +to+ is internal compared to +root+. Building block of +internal?+.
+		# Check if +to+ is internal compared to +root+. Building block of +internal?+.
 		def self.internal_to?(root, to)
 			route = root.route_to(to)
 			if route == to # completely different URL
 				return false
 			else
-				alt_root = root.dup
 				route_internal = route.to_s[0...3] != "../"
-				if root.path[-1] != "/"
-					if not route_internal
-						return false
-					else
-						alt_root.path = "#{root.path}/"
-						alt_route = alt_root.route_to(to)
-						alt_internal = alt_route.to_s[0...3] != "../"
-						return alt_internal
-					end
+				root_slash = root.path[-1] == "/"
+				if root_slash and route_internal
+					return true
 				else
-					if route_internal
-						return true
-					else	
+					alt_root = root.dup
+					if not root_slash
+						alt_root.path = "#{root.path}/"
+					else
 						alt_root.path = root.path[0...-1]
-						alt_route = alt_root.route_to(to)
-						alt_internal = alt_route.to_s[0...3] != "../"
-						return (not alt_internal)
 					end
+					alt_route = alt_root.route_to(to)
+					alt_internal = alt_route.to_s[0...3] != "../"
+					return ((root_slash or route_internal) and alt_internal)
 				end
 			end
 		end

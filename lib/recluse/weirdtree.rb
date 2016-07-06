@@ -140,15 +140,15 @@ module Recluse
 		end
 
 		##
-		# Finds children without parents.
+		# Finds children without parents. Returned as hash.
 		def orphans
-			@child_keys.select { |key, info| info[:parents].length == 0 }.keys
+			@child_keys.select { |key, info| info[:parents].length == 0 }
 		end
 
 		##
-		# Finds parents without children.
+		# Finds parents without children. Returned as hash.
 		def childless
-			@parent_keys.select { |key, children| children.length == 0 }.keys
+			@parent_keys.select { |key, children| children.length == 0 }
 		end
 	end
 end

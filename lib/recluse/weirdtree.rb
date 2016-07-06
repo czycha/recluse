@@ -114,7 +114,7 @@ module Recluse
 		# Delete child. Removes references to child in associated parents.
 		def delete_child(element)
 			if @child_keys.key?(element)
-				@child_keys[element[:parents].each do |parent|
+				@child_keys[element][:parents].each do |parent|
 					@parent_keys[parent] -= [element]
 				end
 				@child_keys.delete element

@@ -8,7 +8,7 @@ module Recluse
 		##
 		# Roots related commands.
 		class Roots < Thor #:nodoc: all
-			desc "add pattern1 [pattern2] ...", "add to roots"
+			desc "add profile pattern1 [pattern2] ...", "add to roots"
 			def add(name, *roots)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
@@ -23,7 +23,7 @@ module Recluse
 				end
 				profile.save
 			end
-			desc "remove pattern1 [pattern2] ...", "remove from roots"
+			desc "remove profile pattern1 [pattern2] ...", "remove from roots"
 			def remove(name, *roots)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
@@ -36,7 +36,7 @@ module Recluse
 					profile.save
 				end
 			end
-			desc "list", "list roots"
+			desc "list profile", "list roots"
 			def list(name)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")

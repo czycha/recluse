@@ -8,7 +8,7 @@ module Recluse
 		##
 		# Blacklist related commands.
 		class Blacklist < Thor #:nodoc: all
-			desc "add pattern1 [pattern2] ...", "add glob patterns to blacklist"
+			desc "add profile pattern1 [pattern2] ...", "add glob patterns to blacklist"
 			def add(name, *patterns)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
@@ -23,7 +23,7 @@ module Recluse
 				end
 				profile.save
 			end
-			desc "remove pattern1 [pattern2] ...", "remove glob patterns from blacklist"
+			desc "remove profile pattern1 [pattern2] ...", "remove glob patterns from blacklist"
 			def remove(name, *patterns)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
@@ -36,7 +36,7 @@ module Recluse
 					profile.save
 				end
 			end
-			desc "clear", "remove all patterns in the blacklist"
+			desc "clear profile", "remove all patterns in the blacklist"
 			def clear(name)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")
@@ -47,7 +47,7 @@ module Recluse
 				profile['blacklist'] = []
 				profile.save
 			end
-			desc "list", "list patterns in blacklist"
+			desc "list profile", "list patterns in blacklist"
 			def list(name)
 				uconf = UserConfig.new '.recluse'
 				unless uconf.exist?("#{name}.yaml")

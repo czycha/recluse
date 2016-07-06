@@ -77,7 +77,7 @@ module Recluse
 				root_slash = root.path[-1] == "/"
 				if root_slash and route_internal
 					return true
-				else
+				elsif root_slash or route_internal
 					alt_root = root.dup
 					if not root_slash
 						alt_root.path = "#{root.path}/"
@@ -86,7 +86,9 @@ module Recluse
 					end
 					alt_route = alt_root.route_to(to)
 					alt_internal = alt_route.to_s[0...3] != "../"
-					return ((root_slash or route_internal) and alt_internal)
+					return alt_internal
+				else
+					return false
 				end
 			end
 		end

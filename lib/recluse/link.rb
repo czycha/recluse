@@ -68,27 +68,33 @@ module Recluse
 
 		##
 		# Check if +to+ is internal compared to +root+. Building block of +internal?+.
+		#
+		# A link is internal compared to the root if it matches the following conditions:
+		#
+		# - Same scheme, subdomain, and domain.
+		# - If +root+ is a directory and doesn't contain a filename (e.g. +http://example.com/test/+):
+		#    - Internal if link is below the root's path or is the same (e.g. +http://example.com/test/index.php+).
+		# - Otherwise +root+ contains a filename (e.g. +http://example.com/test/index.php+):
+		#    - Internal if link is below parent directory of root (e.g. +http://example.com/test/about.php+).
 		def self.internal_to?(root, to)
 			route = root.route_to(to)
-			if route == to # completely different URL
+			if route == to # can't be represented as relative url
 				return false
 			else
 				route_internal = route.to_s[0...3] != "../"
-				root_slash = root.path[-1] == "/"
-				if root_slash and route_internal
-					return true
-				elsif root_slash or route_internal
-					alt_root = root.dup
-					if not root_slash
-						alt_root.path = "#{root.path}/"
+				has_slash = root.path[-1] == "/"
+				if not has_slash # could be a file, or it could be a directory without a slash
+					is_file = !root.extname.empty?
+					if is_file
+						return route_internal
 					else
-						alt_root.path = root.path[0...-1]
+						slashed_root = root.dup
+						slashed_root.path = "#{root.path}/"
+						slashed_route = slashed_root.route_to(to)
+						return (slashed_route.to_s[0...3] != "../")
 					end
-					alt_route = alt_root.route_to(to)
-					alt_internal = alt_route.to_s[0...3] != "../"
-					return alt_internal
 				else
-					return false
+					return route_internal
 				end
 			end
 		end

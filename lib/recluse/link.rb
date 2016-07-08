@@ -64,14 +64,12 @@ module Recluse
 			[*globs].any? { |glob| File.fnmatch(glob, @absolute) }
 		end
 
-		private
-
 		##
 		# Check if +to+ is internal compared to +root+. Building block of +internal?+.
 		#
 		# A link is internal compared to the root if it matches the following conditions:
 		#
-		# - Same scheme, subdomain, and domain.
+		# - Same scheme, subdomain, and domain. In other words, a relative URL can be built out of the link.
 		# - If +root+ is a directory and doesn't contain a filename (e.g. +http://example.com/test/+):
 		#    - Internal if link is below the root's path or is the same (e.g. +http://example.com/test/index.php+).
 		# - Otherwise +root+ contains a filename (e.g. +http://example.com/test/index.php+):

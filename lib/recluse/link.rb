@@ -65,15 +65,15 @@ module Recluse
 		end
 
 		##
-		# Check if +to+ is internal compared to +root+. Building block of +internal?+.
+		# Check if +to+ is internal compared to +root+. Building block of +internal?+. Both +root+ and +to+ must be of type +Addressable::URI+.
 		#
 		# A link is internal compared to the root if it matches the following conditions:
 		#
 		# - Same scheme, subdomain, and domain. In other words, a relative URL can be built out of the link.
 		# - If +root+ is a directory and doesn't contain a filename (e.g. +http://example.com/test/+):
-		#    - Internal if link is below the root's path or is the same (e.g. +http://example.com/test/index.php+).
-		# - Otherwise +root+ contains a filename (e.g. +http://example.com/test/index.php+):
-		#    - Internal if link is below parent directory of root (e.g. +http://example.com/test/about.php+).
+		#   - Internal if link is below the root's path or is the same (e.g. +http://example.com/test/index.php+).
+		# - Otherwise if +root+ contains a filename (e.g. +http://example.com/test/index.php+):
+		#   - Internal if link is below parent directory of root (e.g. +http://example.com/test/about.php+).
 		def self.internal_to?(root, to)
 			route = root.route_to(to)
 			if route == to # can't be represented as relative url

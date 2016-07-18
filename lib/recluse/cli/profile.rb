@@ -8,7 +8,6 @@ require 'user_config'
 
 module Recluse
 	module CLI
-		SafeYAML::OPTIONS[:default_mode] = :safe
 		##
 		# Commands to edit/create/delete profiles.
 		class Profile < Thor #:nodoc: all
@@ -88,8 +87,8 @@ module Recluse
 					old_profile.each do |key, value|
 						new_profile[key] = value
 					end
+					new_profile.save
 					uconf.delete "#{old_name}.yaml"
-					uconf.save
 				end
 			end
 			desc "list", "list profiles"

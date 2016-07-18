@@ -4,7 +4,6 @@ require 'user_config'
 
 module Recluse
 	module CLI
-		SafeYAML::OPTIONS[:default_mode] = :safe
 		##
 		# Whitelist related commands.
 		class Whitelist < Thor #:nodoc: all

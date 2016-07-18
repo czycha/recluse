@@ -4,7 +4,6 @@ require 'user_config'
 
 module Recluse
 	module CLI
-		SafeYAML::OPTIONS[:default_mode] = :safe
 		##
 		# Roots related commands.
 		class Roots < Thor #:nodoc: all

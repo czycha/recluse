@@ -1,4 +1,4 @@
-require 'recluse/weirdtree'
+require 'recluse/hashtree'
 require 'recluse/link'
 require 'recluse/result'
 require 'recluse/info'
@@ -46,7 +46,7 @@ module Recluse
 		attr_accessor :scheme_squash
 
 		##
-		# +WeirdTree+ representation of results.
+		# +HashTree+ representation of results.
 		attr_accessor :results
 
 		##
@@ -77,7 +77,7 @@ module Recluse
 			@internal_only = internal_only
 			@scheme_squash = scheme_squash
 			@redirect = redirect
-			@results = WeirdTree.new
+			@results = HashTree.new
 		end
 
 		##

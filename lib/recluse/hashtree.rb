@@ -1,9 +1,11 @@
 module Recluse
 	##
 	# Sorta like a node tree but using two hashes for easy searching for parents and/or children.
-	class WeirdTree
+	# This way, it should have similar performance whether you're iterating over parents or children.
+	# Additionally, not every child will need a parent or they might not need a parent at initialization.
+	class HashTree
 		##
-		# Create a weird tree.
+		# Create a hash tree.
 		def initialize
 			@parent_keys = {}
 			@child_keys = {}

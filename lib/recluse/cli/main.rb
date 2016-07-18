@@ -65,7 +65,7 @@ module Recluse
 					puts "Matched URLs:\t#{child_count}"
 					puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, total}%"
 				end
-				def status_save(profile, csv_path, group_by: :none)
+				def status_save(profile, csv_path, group_by: :none, success: true)
 					puts "Saving report..."
 					counts = {}
 					case group_by
@@ -94,7 +94,7 @@ module Recluse
 								status = val.code
 								error = val.error
 							end
-							unless (status.to_i / 100) == 2
+							if success or (status.to_i / 100) != 2
 								to_csv.call(csv, status, child, info[:parents], error)
 							end
 							if counts.key?(status)
@@ -137,6 +137,7 @@ module Recluse
 				end
 			end
 			method_option :group_by, :type => :string, :aliases => "-g", :default => "none", :enum => ["none", "url"], :desc => "Group by key"
+			method_option :success, :type => :boolean, :aliases => "-ok", :default => false, :desc => "Include successful 2xx results" 
 			desc "status csv_path profile1 [profile2] ...", "runs report on link statuses"
 			def status(csv_path, *profiles)
 				if profiles.length == 0
@@ -155,7 +156,7 @@ module Recluse
 					exit -1
 				end
 				ending = Proc.new do
-					status_save profile, csv_path, group_by: options["group_by"].to_sym
+					status_save profile, csv_path, group_by: options["group_by"].to_sym, success: options["success"]
 					exit
 				end
 				for sig in ['INT', 'TERM']

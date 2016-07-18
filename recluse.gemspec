@@ -20,7 +20,6 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "thor", "~> 0.19.1"
   spec.add_runtime_dependency "mechanize", "~> 2.7.4"
-  spec.add_runtime_dependency "safe_yaml", "~> 1.0.4"
   spec.add_runtime_dependency "addressable", "~> 2.4.0"
   spec.add_runtime_dependency "colorize", "~> 0.7.7"
   spec.add_runtime_dependency "user_config", "~> 0.0.4"

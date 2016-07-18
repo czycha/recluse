@@ -1,4 +1,3 @@
-require 'safe_yaml'
 require 'recluse/weirdtree'
 require 'recluse/link'
 require 'recluse/result'
@@ -287,7 +286,6 @@ module Recluse
 		##
 		# Loads profile by name.
 		def self.load(profile)
-			SafeYAML::OPTIONS[:default_mode] = :safe
 			uconf = UserConfig.new '.recluse'
 			raise ProfileError.new("Profile '#{profile}' doesn't exist") unless uconf.exist?("#{profile}.yaml")
 			options = uconf["#{profile}.yaml"]

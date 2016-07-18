@@ -3,7 +3,6 @@ require 'recluse/profile'
 require 'recluse/cli/whitelist'
 require 'recluse/cli/blacklist'
 require 'recluse/cli/roots'
-require 'safe_yaml'
 require 'user_config'
 
 module Recluse

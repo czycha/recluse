@@ -1,5 +1,4 @@
 require 'thor'
-require 'safe_yaml'
 require 'user_config'
 
 module Recluse

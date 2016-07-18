@@ -9,7 +9,6 @@ module Recluse
 	##
 	# Command-line interface segments.
 	module CLI
-		SafeYAML::OPTIONS[:default_mode] = :safe 
 		##
 		# Main commands.
 		class Main < Thor #:nodoc: all

@@ -34,6 +34,17 @@ module Recluse
 					profile.save
 				end
 			end
+			desc "clear profile", "remove all roots"
+			def clear(name)
+				uconf = UserConfig.new '.recluse'
+				unless uconf.exist?("#{name}.yaml")
+					puts "Profile #{name} doesn't exist"
+					exit(-1)
+				end
+				profile = uconf["#{name}.yaml"]
+				profile['roots'] = []
+				profile.save
+			end
 			desc "list profile", "list roots"
 			def list(name)
 				uconf = UserConfig.new '.recluse'

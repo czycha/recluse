@@ -11,8 +11,7 @@ require 'ruby-progressbar'
 module Recluse
 	##
 	# Error to throw if there's something non-standard with the profile configuration.
-	class ProfileError < RuntimeError
-	end
+	class ProfileError < RuntimeError end
 
 	##
 	# A profile is an atomic unit of rules for link checking.

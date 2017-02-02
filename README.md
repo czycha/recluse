@@ -72,7 +72,8 @@ Spiders through the profile and reports the [HTTP status codes](https://en.wikip
 | csv_path | | Yes | String | | The path of where to save results. Results are saved as CSV (comma-separated values). |
 | profiles | | Yes | Array of profile names | | List of profiles to check. More than one profile can be checked in one run. |
 | group_by | `--group-by`<br/>`-g` | No | One of `none` or `url` | `none` | What to group by in the result output. If `none`, there will be a row for each pair of checked URL and the page it was found on. If `url`, there will be one row for each URL, and the page cell will have a list of every page the URL was found on. |
-| success | `--success`<br/>`--no-success`<br/>`-ok` | No | Boolean | `false` | Include 2xx statuses (success) in the results. |
+| include | `--include`<br/>`-i` | No | Array of status codes | Include all | Include these status codes in the results. Can be a specific number (ex: `200`) or a wildcard (ex: `2xx`). You can also include `idk` for pages that result in errors that prevent status code detection. |
+| exclude | `--exclude`<br/>`-x` | No | Array of status codes | Exclude none | Exclude these status codes from the results. Same format as including. |
 
 ##### Output format
 

@@ -1,5 +1,6 @@
 require 'thor'
 require 'recluse/profile'
+require 'recluse/statuscode'
 require 'recluse/cli/profile'
 require 'csv'
 require 'user_config'
@@ -65,7 +66,7 @@ module Recluse
 					puts "Matched URLs:\t#{child_count}"
 					puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, total}%"
 				end
-				def status_save(profile, csv_path, group_by: :none, success: true)
+				def status_save(profile, csv_path, group_by: :none, includes: [], excludes: [])
 					puts "Saving report..."
 					counts = {}
 					case group_by
@@ -82,6 +83,9 @@ module Recluse
 							end
 						end
 					end
+					valid_status = Proc.new do |code|
+						(includes.any? { |include_code| include_code.equal?(code) }) and (excludes.none? { |exclude_code| exclude_code.equal?(code) })
+					end
 					report = profile.results.children
 					CSV.open(csv_path, "w+") do |csv|
 						csv << ["Status code", "URL", page_label, "With error"]
@@ -94,7 +98,7 @@ module Recluse
 								status = val.code
 								error = val.error
 							end
-							if success or (status.to_i / 100) != 2
+							if valid_status.call(status)
 								to_csv.call(csv, status, child, info[:parents], error)
 							end
 							if counts.key?(status)
@@ -106,7 +110,8 @@ module Recluse
 					end
 					puts "Total:\t#{report.length}"
 					counts.each do |code, count|
-						puts "#{code}:\t#{count.to_i}\t#{perc count, report.length}%"
+						valid = valid_status.call code
+						puts "#{code}:\t#{count.to_i}\t#{perc count, report.length}%\t#{valid ? 'Reported' : 'Unreported'}"
 					end
 				end
 				def assert_save(profile, csv_path)
@@ -137,7 +142,8 @@ module Recluse
 				end
 			end
 			method_option :group_by, :type => :string, :aliases => "-g", :default => "none", :enum => ["none", "url"], :desc => "Group by key"
-			method_option :success, :type => :boolean, :aliases => "-ok", :default => false, :desc => "Include successful 2xx results" 
+			method_option :include, :type => :array, :aliases => "-i", :default => ['xxx'], :desc => "Include these status code results. Can be numbers or wildcards (4xx). 'idk' is a Recluse status code for when the status cannot be determined for the page."
+			method_option :exclude, :type => :array, :aliases => "-x", :default => [], :desc => "Exclude these status code results. Can be numbers or wildcards (4xx). 'idk' is a Recluse status code for when the status cannot be determined for the page."
 			desc "status csv_path profile1 [profile2] ...", "runs report on link statuses"
 			def status(csv_path, *profiles)
 				if profiles.length == 0
@@ -153,10 +159,21 @@ module Recluse
 				profile = profile_queue[0]
 				if options["group_by"] == "page"
 					puts "Page grouping only available with --find."
-					exit -1
+					exit(-1)
+				end
+				begin
+					includes = options[:include].map { |code| Recluse::StatusCode.new code }
+					if includes.length == 0
+						puts "No status codes"
+						exit(-1)
+					end
+					excludes = options[:exclude].map { |code| Recluse::StatusCode.new code }
+				rescue StatusCodeError => e
+					puts e
+					exit(-1)
 				end
 				ending = Proc.new do
-					status_save profile, csv_path, group_by: options["group_by"].to_sym, success: options["success"]
+					status_save profile, csv_path, group_by: options["group_by"].to_sym, includes: includes, excludes: excludes
 					exit
 				end
 				for sig in ['INT', 'TERM']

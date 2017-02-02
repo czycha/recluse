@@ -18,13 +18,13 @@ module Recluse
 		##
 		# Create a status code.
 		def initialize(code)
-			raise StatusCodeError.new("Invalid status code") unless StatusCode.valid_code?(code)
+			raise StatusCodeError.new("Invalid status code: #{code}") unless StatusCode.valid_code?(code)
 			case code
 			when String
-				if (code =~ /^[\d]{3}/).nil?
+				if (code =~ /^[\d]{3}/).nil? # wildcards
 					@code = code.downcase
 					@exact = false
-				else
+				else # whole number
 					@code = code.to_i
 					@exact = true
 				end

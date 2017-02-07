@@ -2,6 +2,11 @@ require 'addressable/uri'
 
 module Recluse
   ##
+  # Errors related to links.
+  class LinkError < RuntimeError
+  end
+
+  ##
   # A simple link container for a profile's queue.
   class Link
     ##
@@ -23,15 +28,18 @@ module Recluse
     ##
     # Create a link.
     def initialize(url, parent)
+      raise LinkError, 'Incorrect parent URL. Expects :root or a string.' unless parent == :root || parent.class == String
       @url = url
       @parent = parent
-      @address = if @parent == :root
-                   Addressable::URI.parse @url
-                 else
-                   Addressable::URI.join @parent, @url
-                 end
+      @address = @parent == :root ? Addressable::URI.parse(@url) : Addressable::URI.join(@parent, @url)
       @address.fragment = nil
       @absolute = @address.to_s
+    end
+
+    ##
+    # Output as string.
+    def to_s
+      @absolute
     end
 
     ##
@@ -39,7 +47,7 @@ module Recluse
     def internal?(addrroots, scheme_squash: false)
       return true if @parent == :root
       return addrroots.any? { |root| Link.internal_to?(root, @address) } unless scheme_squash
-      a2 = @address.dupe
+      a2 = @address.dup
       a2.scheme = a2.scheme == 'https' ? 'http' : 'https'
       addrroots.any? { |root| (Link.internal_to?(root, @address) || Link.internal_to?(root, a2)) }
     end
@@ -47,8 +55,7 @@ module Recluse
     ##
     # Is the link runnable compared to the black- and whitelists, and the link scheme?
     def run?(blacklist, whitelist)
-      return false unless (@address.scheme == 'http') || (@address.scheme == 'https')
-      (!match?(blacklist) || match?(whitelist))
+      ((@address.scheme == 'http') || (@address.scheme == 'https')) && (!match?(blacklist) || match?(whitelist))
     end
 
     ##

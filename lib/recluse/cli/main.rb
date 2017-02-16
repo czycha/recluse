@@ -116,7 +116,7 @@ module Recluse
           end
         end
 
-        def assert_save(profile, csv_path)
+        def assert_save(profile, csv_path, report_vals)
           puts 'Saving report...'
           report = profile.results.children
           counts = {}
@@ -128,7 +128,7 @@ module Recluse
               val.each do |selector, exists|
                 counts[selector] = { 'true' => 0, 'false' => 0 } unless counts.key? selector
                 counts[selector][exists.to_s] += 1
-                csv << [selector, exists.to_s, child]
+                csv << [selector, exists.to_s, child] if report_vals.include?(exists)
               end
             end
           end
@@ -142,6 +142,7 @@ module Recluse
           end
         end
       end
+
       method_option :group_by, type: :string, aliases: '-g', default: 'none', enum: %w(none url), desc: 'Group by key'
       method_option :include, type: :array, aliases: '-i', default: ['xxx'], desc: "Include these status code results. Can be numbers or wildcards (4xx). 'idk' is a Recluse status code for when the status cannot be determined for the page."
       method_option :exclude, type: :array, aliases: '-x', default: [], desc: "Exclude these status code results. Can be numbers or wildcards (4xx). 'idk' is a Recluse status code for when the status cannot be determined for the page."
@@ -228,7 +229,9 @@ module Recluse
         ending.call
       end
       method_option :exists, type: :array, aliases: '-e', required: true, banner: 'SELECTOR', desc: 'Assert existence of HTML elements matching CSS selector'
-      desc 'assert csv_path profile1 [profile2] ... --exists selector1 [selector2] ...', 'assert HTML element existence'
+      method_option :report_true_only, type: :boolean, aliases: '--true', default: false, desc: 'Report only true assertions. Default is to report both true and false.'
+      method_option :report_false_only, type: :boolean, aliases: '--false', default: false, desc: 'Report only false assertions. Default is to report both true and false.'
+      desc 'assert csv_path profile1 [profile2] ... [options] --exists selector1 [selector2] ...', 'assert HTML element existence'
       def assert(csv_path, *profiles)
         if profiles.empty?
           puts 'No profile provided'
@@ -246,10 +249,19 @@ module Recluse
           puts 'No selector patterns provided for --exists option'
           exit(-1)
         end
+        report = []
+        if options[:report_false_only] == options[:report_true_only]
+          report = [true, false]
+        elsif options[:report_true_only]
+          report = [true]
+        elsif option[:report_false_only]
+          report = [false]
+        end
         ending = proc do
-          assert_save profile, csv_path
+          assert_save profile, csv_path, report
           exit
         end
+
         %w(INT TERM).each do |sig|
           Signal.trap sig, &ending
         end

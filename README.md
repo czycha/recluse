@@ -118,6 +118,8 @@ Asserts the existence of an HTML element using [CSS-style selectors](https://dev
 |----------|-------|----------|------|---------|-------------|
 | csv_path | | Yes | String | | The path of where to save results. Results are saved as CSV (comma-separated values). |
 | profiles | | Yes | Array of profile names | | List of profiles to check. More than one profile can be checked in one run. |
+| true | `--true`<br/>`--report-true-only` | No | Boolean | `false` | Report only true assertions. Reports both true and false assertions by default. |
+| false | `--false`<br/>`--report-false-only` | No | Boolean | `false` | Report only false assertions. Reports both true and false assertions by default. |
 | exists | `--exists`<br/>`-e` | Yes | Array of CSS selectors | | CSS selectors to assert the existence of on each spidered page. |
 
 ##### Output format

@@ -131,7 +131,7 @@ describe Recluse::HashTree do
     end
     it 'should be able to get values' do
       @hashes[0].get_values('A')
-                .must_equal(@legend.select { |k, v| k == 'E' || k == 'D' })
+                .must_equal(@legend.select { |k, _v| k == 'E' || k == 'D' })
       @hashes[2].get_values('A')
                 .must_equal({})
     end

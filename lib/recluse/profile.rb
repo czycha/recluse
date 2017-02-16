@@ -104,8 +104,11 @@ module Recluse
         next unless element.run?(@blacklist, @whitelist)
         internal = element.internal?(addrroot)
         next if @internal_only && !internal
+        if @results.child?(element.absolute)
+          @results.add element.absolute, element.parent
+          next
+        end
         @results.add element.absolute, element.parent
-        next if @results.child?(element.absolute)
         if @scheme_squash
           alt = element.address
           alt.scheme = alt.scheme == 'http' ? 'https' : 'http'

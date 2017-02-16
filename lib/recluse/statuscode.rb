@@ -21,9 +21,9 @@ module Recluse
       raise StatusCodeError, "Invalid status code: #{code}" unless StatusCode.valid_code?(code)
       case code
       when String
-        if (code =~ /^[\d]{3}/).nil? # wildcards
+        if (code =~ /^[\d]{3}/).nil? # wildcards or idk
           @code = code.downcase
-          @exact = false
+          @exact = @code == 'idk'
         else # whole number
           @code = code.to_i
           @exact = true

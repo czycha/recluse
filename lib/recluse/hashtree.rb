@@ -127,7 +127,7 @@ module Recluse
     def delete_parent(element)
       if @parent_keys.key?(element)
         @parent_keys[element].each do |child|
-          @child_keys[child] -= [element]
+          @child_keys[child][:parents] -= [element]
         end
         @parent_keys.delete element
       end

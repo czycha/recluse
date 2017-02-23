@@ -115,25 +115,25 @@ module Recluse
     ##
     # Delete child. Removes references to child in associated parents.
     def delete_child(element)
-      if child?(element)
-        c_key = get_child_key(element)
-        @child_keys[c_key][:parents].each do |parent|
-          @parent_keys[parent] -= [c_key]
-        end
-        @child_keys.delete c_key
+      return false unless child?(element)
+      c_key = get_child_key(element)
+      @child_keys[c_key][:parents].each do |parent|
+        @parent_keys[parent] -= [c_key]
       end
+      @child_keys.delete c_key
+      true
     end
 
     ##
     # Delete parent. Removes references to parent in associated children.
     def delete_parent(element)
-      if parent?(element)
-        p_key = get_parent_key(element)
-        @parent_keys[p_key].each do |child|
-          @child_keys[child][:parents] -= [p_key]
-        end
-        @parent_keys.delete p_key
+      return false unless parent?(element)
+      p_key = get_parent_key(element)
+      @parent_keys[p_key].each do |child|
+        @child_keys[child][:parents] -= [p_key]
       end
+      @parent_keys.delete p_key
+      true
     end
 
     ##
@@ -160,13 +160,13 @@ module Recluse
     ##
     # Get the child key (in case of alternative equivalence testing)
     def get_child_key(child)
-      @child_keys.keys.select { |key| @equivalence.call(key, child) }.first
+      @child_keys.keys.find { |key| @equivalence.call(key, child) }
     end
 
     ##
     # Get the parent key (in case of alternative equivalence testing)
     def get_parent_key(parent)
-      @parent_keys.keys.select { |key| @equivalence.call(key, parent) }.first
+      @parent_keys.keys.find { |key| @equivalence.call(key, parent) }
     end
   end
 end

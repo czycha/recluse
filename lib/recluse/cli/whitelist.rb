@@ -29,10 +29,9 @@ module Recluse
           exit(-1)
         end
         profile = uconf["#{name}.yaml"]
-        if profile.key?('whitelist')
-          profile['whitelist'] -= patterns
-          profile.save
-        end
+        return unless profile.key?('whitelist')
+        profile['whitelist'] -= patterns
+        profile.save
       end
       desc 'clear profile', 'remove all patterns in the whitelist'
       def clear(name)

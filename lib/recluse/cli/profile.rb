@@ -79,16 +79,15 @@ module Recluse
           puts "Profile #{new_name} already exists"
           exit(-1)
         end
-        if uconf.exist?("#{old_name}.yaml")
-          old_profile = uconf["#{old_name}.yaml"]
-          old_profile['name'] = new_name
-          new_profile = uconf["#{new_name}.yaml"]
-          old_profile.each do |key, value|
-            new_profile[key] = value
-          end
-          new_profile.save
-          uconf.delete "#{old_name}.yaml"
+        return unless uconf.exist?("#{old_name}.yaml")
+        old_profile = uconf["#{old_name}.yaml"]
+        old_profile['name'] = new_name
+        new_profile = uconf["#{new_name}.yaml"]
+        old_profile.each do |key, value|
+          new_profile[key] = value
         end
+        new_profile.save
+        uconf.delete "#{old_name}.yaml"
       end
       desc 'list', 'list profiles'
       def list

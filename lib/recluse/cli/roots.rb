@@ -29,10 +29,9 @@ module Recluse
           exit(-1)
         end
         profile = uconf["#{name}.yaml"]
-        if profile.key?('roots')
-          profile['roots'] -= roots
-          profile.save
-        end
+        return unless profile.key?('roots')
+        profile['roots'] -= roots
+        profile.save
       end
       desc 'clear profile', 'remove all roots'
       def clear(name)

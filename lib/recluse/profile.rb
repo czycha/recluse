@@ -65,7 +65,7 @@ module Recluse
         scheme_squash: false,
         redirect: false
     )
-      raise ProfileError, 'Profile needs roots for starting point' unless roots.length >= 1
+      raise ProfileError, 'Profile needs roots for starting point' if roots.empty?
       @name = name
       @email = email
       @roots = roots
@@ -77,11 +77,7 @@ module Recluse
       @results = HashTree.new do |url1, url2|
         url1, url2 = url2, url1 if url2.length > url1.length
         # Detect if URL exists already, but just has a slash at end
-        if url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2)
-          true
-        else
-          false
-        end
+        (url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2))
       end
     end
 

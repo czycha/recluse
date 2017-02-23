@@ -74,7 +74,15 @@ module Recluse
       @internal_only = internal_only
       @scheme_squash = scheme_squash
       @redirect = redirect
-      @results = HashTree.new
+      @results = HashTree.new do |url1, url2|
+        url1, url2 = url2, url1 if url2.length > url1.length
+        # Detect if URL exists already, but just has a slash at end
+        if url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2)
+          true
+        else
+          false
+        end
+      end
     end
 
     ##
@@ -104,8 +112,11 @@ module Recluse
         next unless element.run?(@blacklist, @whitelist)
         internal = element.internal?(addrroot)
         next if @internal_only && !internal
+        if @results.child?(element.absolute)
+          @results.add element.absolute, element.parent
+          next
+        end
         @results.add element.absolute, element.parent
-        next if @results.child?(element.absolute)
         if @scheme_squash
           alt = element.address
           alt.scheme = alt.scheme == 'http' ? 'https' : 'http'
@@ -167,7 +178,7 @@ module Recluse
           result.code = page.code
           if @redirect
             result_link = Link.new(page.uri.to_s, element.parent)
-            next unless result_link.internal?(addroot)
+            next unless result_link.internal?(addrroot)
           end
           queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } unless (page.class == Mechanize::File) || (page.class == Mechanize::Image)
         rescue Mechanize::ResponseCodeError => code
@@ -193,8 +204,7 @@ module Recluse
       while queue.length >= 1
         element = queue.shift
         internal = element.internal?(addrroot)
-        next unless element.run?(@blacklist, @whitelist) && internal
-        next if @results.child?(element.absolute)
+        next unless element.run?(@blacklist, @whitelist) && internal && !@results.child?(element.absolute)
         if @scheme_squash
           alt = element.address
           alt.scheme = alt.scheme == 'http' ? 'https' : 'http'
@@ -208,7 +218,7 @@ module Recluse
           result.code = page.code
           if @redirect
             result_link = Link.new(page.uri.to_s, element.parent)
-            next unless result_link.internal?(addroot)
+            next unless result_link.internal?(addrroot)
           end
           unless (page.class == Mechanize::File) || (page.class == Mechanize::Image)
             existence = {}
@@ -249,7 +259,17 @@ module Recluse
       options['whitelist'] = @whitelist
       options['internal_only'] = @internal_only
       options['scheme_squash'] = @scheme_squash
+      options['redirect'] = @redirect
       options.save
+    end
+
+    ##
+    # Test if profiles share the same configuration options.
+    def ==(other)
+      return false if other.class != self.class
+      instance_variables.all? do |ivar|
+        ivar == '@results'.to_sym || instance_variable_get(ivar) == other.instance_variable_get(ivar)
+      end
     end
 
     ##

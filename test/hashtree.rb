@@ -15,6 +15,7 @@ describe Recluse::HashTree do
       'E' => 4
     }
     @hashes = Array.new(3) { Recluse::HashTree.new }
+    @hashes[4] = Recluse::HashTree.new { |a, b| (a % 10) == (b % 10) }
     # Complex network
     @hashes[0].add('A', 'B')
     @hashes[0].add('B', 'C')
@@ -41,6 +42,10 @@ describe Recluse::HashTree do
     @hashes[2].add_parent('C')
     @hashes[2].add_parent('D')
     @hashes[2].add_parent('E')
+    # Equivalence override
+    (0..8).each do |i|
+      @hashes[4].add(i, i - 1)
+    end
   end
   describe 'children' do
     it 'should be able to get values' do
@@ -111,12 +116,9 @@ describe Recluse::HashTree do
                 .must_match_array(@legend.keys)
     end
     it 'should be detectable' do
-      @hashes[0].parent?('A')
-                .must_equal(true)
-      @hashes[1].parent?('A')
-                .must_equal(false)
-      @hashes[2].parent?('A')
-                .must_equal(true)
+      assert @hashes[0].parent?('A')
+      refute @hashes[1].parent?('A')
+      assert @hashes[2].parent?('A')
     end
     it 'can be childless' do
       @hashes[0].childless
@@ -137,40 +139,55 @@ describe Recluse::HashTree do
     end
   end
   it 'should be able to detect either child or parent' do
-    @hashes[0].has?('A')
-              .must_equal(true)
-    @hashes[1].has?('A')
-              .must_equal(true)
-    @hashes[2].has?('A')
-              .must_equal(true)
+    assert @hashes[0].has?('A')
+    assert @hashes[1].has?('A')
+    assert @hashes[2].has?('A')
   end
   describe 'deletion' do
     it 'should be able to delete children' do
       @hashes[0].delete_child('A')
-      @hashes[0].child?('A')
-                .must_equal(false)
+      refute @hashes[0].child?('A')
       @hashes[1].delete_child('A')
-      @hashes[1].child?('A')
-                .must_equal(false)
+      refute @hashes[1].child?('A')
     end
     it 'should be able to delete parents' do
       @hashes[0].delete_parent('B')
-      @hashes[0].parent?('B')
-                .must_equal(false)
+      refute @hashes[0].parent?('B')
       @hashes[2].delete_parent('B')
-      @hashes[2].parent?('B')
-                .must_equal(false)
+      refute @hashes[2].parent?('B')
     end
     it 'should be able to delete dual-roled elements' do
       @hashes[0].delete('E')
-      @hashes[0].has?('E')
-                .must_equal(false)
+      refute @hashes[0].has?('E')
       @hashes[1].delete('E')
-      @hashes[1].has?('E')
-                .must_equal(false)
+      refute @hashes[1].has?('E')
       @hashes[2].delete('E')
-      @hashes[2].has?('E')
-                .must_equal(false)
+      refute @hashes[2].has?('E')
+    end
+  end
+  describe 'overriding equivalence checks' do
+    it 'should support adding equivalent children' do
+      refute @hashes[4].child?(9)
+      @hashes[4].add(9, 8)
+      assert @hashes[4].child?(9)
+      @hashes[4].delete_child(9)
+      refute @hashes[4].child?(9)
+      @hashes[4].add(19, 18)
+      assert @hashes[4].child?(9)
+      @hashes[4].set_child_value(9, 9)
+      @hashes[4].get_child_value(9)
+                .must_equal(9)
+      @hashes[4].get_child_value(19)
+                .must_equal(9)
+    end
+    it 'should support adding equivalent parents' do
+      refute @hashes[4].parent?(8)
+      @hashes[4].add(9, 8)
+      assert @hashes[4].parent?(8)
+      @hashes[4].delete_parent(8)
+      refute @hashes[4].parent?(8)
+      @hashes[4].add(19, 18)
+      assert @hashes[4].parent?(8)
     end
   end
 end

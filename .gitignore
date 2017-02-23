@@ -9,3 +9,4 @@
 /tmp/
 *.csv
 .DS_Store
+*.log

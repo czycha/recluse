@@ -6,24 +6,25 @@ module Recluse
   class HashTree
     ##
     # Create a hash tree.
-    def initialize
+    def initialize(&block)
       @parent_keys = {}
       @child_keys = {}
+      @equivalence = block.nil? ? (proc { |a, b| a == b }) : block
     end
 
     ##
     # Add child associated with parent(s).
     def add(child, parents)
-      unless @child_keys.key?(child)
+      unless child?(child)
         @child_keys[child] = {
           value: nil,
           parents: []
         }
       end
-      @child_keys[child][:parents] += [*parents]
+      @child_keys[get_child_key(child)][:parents] += [*parents]
       [*parents].each do |parent|
-        @parent_keys[parent] = [] unless @parent_keys.key?(parent)
-        @parent_keys[parent] << child
+        @parent_keys[parent] = [] unless parent?(parent)
+        @parent_keys[get_parent_key(parent)] << get_child_key(child)
       end
     end
 
@@ -31,7 +32,7 @@ module Recluse
     # Add parent with no children.
     def add_parent(parents)
       [*parents].each do |parent|
-        @parent_keys[parent] = [] unless @parent_keys.key?(parent)
+        @parent_keys[parent] = [] unless parent?(parent)
       end
     end
 
@@ -39,7 +40,7 @@ module Recluse
     # Add child with no value and no parents.
     def add_child(children)
       [*children].each do |child|
-        next if @child_keys.key?(child)
+        next if child?(child)
         @child_keys[child] = {
           value: nil,
           parents: []
@@ -50,32 +51,32 @@ module Recluse
     ##
     # Set value of child.
     def set_child_value(child, value)
-      @child_keys[child][:value] = value
+      @child_keys[get_child_key(child)][:value] = value
     end
 
     ##
     # Get value of child.
     def get_child_value(child)
-      @child_keys[child][:value]
+      @child_keys[get_child_key(child)][:value]
     end
 
     ##
     # Get child's parents
     def get_parents(child)
-      @child_keys[child][:parents]
+      @child_keys[get_child_key(child)][:parents]
     end
 
     ##
     # Get parent's children
     def get_children(parent)
-      @parent_keys[parent]
+      @parent_keys[get_parent_key(parent)]
     end
 
     ##
     # Collect values of children for parent.
     def get_values(parent)
       vals = {}
-      @parent_keys[parent].each do |child|
+      @parent_keys[get_parent_key(parent)].each do |child|
         vals[child] = @child_keys[child][:value]
       end
       vals
@@ -96,40 +97,42 @@ module Recluse
     ##
     # Does element exist as a child and/or parent key?
     def has?(element)
-      @parent_keys.key?(element) || @child_keys.key?(element)
+      child?(element) || parent?(element)
     end
 
     ##
     # Is element a child?
     def child?(element)
-      @child_keys.key?(element)
+      @child_keys.keys.any? { |key| @equivalence.call(key, element) }
     end
 
     ##
     # Is element a parent?
     def parent?(element)
-      @parent_keys.key?(element)
+      @parent_keys.keys.any? { |key| @equivalence.call(key, element) }
     end
 
     ##
     # Delete child. Removes references to child in associated parents.
     def delete_child(element)
-      if @child_keys.key?(element)
-        @child_keys[element][:parents].each do |parent|
-          @parent_keys[parent] -= [element]
+      if child?(element)
+        c_key = get_child_key(element)
+        @child_keys[c_key][:parents].each do |parent|
+          @parent_keys[parent] -= [c_key]
         end
-        @child_keys.delete element
+        @child_keys.delete c_key
       end
     end
 
     ##
     # Delete parent. Removes references to parent in associated children.
     def delete_parent(element)
-      if @parent_keys.key?(element)
-        @parent_keys[element].each do |child|
-          @child_keys[child][:parents] -= [element]
+      if parent?(element)
+        p_key = get_parent_key(element)
+        @parent_keys[p_key].each do |child|
+          @child_keys[child][:parents] -= [p_key]
         end
-        @parent_keys.delete element
+        @parent_keys.delete p_key
       end
     end
 
@@ -150,6 +153,20 @@ module Recluse
     # Finds parents without children. Returned as hash.
     def childless
       @parent_keys.select { |_key, children| children.empty? }
+    end
+
+    private
+
+    ##
+    # Get the child key (in case of alternative equivalence testing)
+    def get_child_key(child)
+      @child_keys.keys.select { |key| @equivalence.call(key, child) }.first
+    end
+
+    ##
+    # Get the parent key (in case of alternative equivalence testing)
+    def get_parent_key(parent)
+      @parent_keys.keys.select { |key| @equivalence.call(key, parent) }.first
     end
   end
 end

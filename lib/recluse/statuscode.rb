@@ -72,7 +72,7 @@ module Recluse
         initial = code[0].to_i
         ((1 <= initial) && (initial <= 5))
       when Integer
-        ((100 <= code) && code < 600)
+        ((100 <= code) && code < 1000)
       when Recluse::StatusCode
         true
       else

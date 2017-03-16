@@ -70,7 +70,7 @@ module Recluse
         return false if (code =~ /^([\dx]{3}|idk)$/i).nil?
         return true if (code == 'idk') || (code[0] == 'x')
         initial = code[0].to_i
-        ((1 <= initial) && (initial <= 5))
+        ((1 <= initial) && (initial <= 9))
       when Integer
         ((100 <= code) && code < 1000)
       when Recluse::StatusCode

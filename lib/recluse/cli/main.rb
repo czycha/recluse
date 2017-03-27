@@ -24,7 +24,7 @@ module Recluse
           parent_count = 0
           case group_by
           when :page
-            report = profile.results.parents
+            report = profile.results[:find].parents
             CSV.open(csv_path, 'w+') do |csv|
               csv << ['Page', 'Matching URLs']
               report.each do |parent, children|
@@ -35,7 +35,7 @@ module Recluse
               end
             end
           when :none
-            report = profile.results.parents
+            report = profile.results[:find].parents
             CSV.open(csv_path, 'w+') do |csv|
               csv << ['Matching URL', 'Page']
               report.each do |parent, children|
@@ -47,7 +47,7 @@ module Recluse
               end
             end
           when :url
-            report = profile.results.children
+            report = profile.results[:find].children
             CSV.open(csv_path, 'w+') do |csv|
               csv << ['Matching URL', 'Pages']
               parents = Set.new
@@ -61,7 +61,7 @@ module Recluse
               parent_count = parents.length
             end
           end
-          total = profile.results.parents.keys.length
+          total = profile.results[:find].parents.keys.length
           puts "Total pages:\t#{total}"
           puts "Matched URLs:\t#{child_count}"
           puts "Pages with matches:\t#{parent_count}\t#{perc parent_count, total}%"
@@ -87,7 +87,7 @@ module Recluse
           valid_status = proc do |code|
             (includes.any? { |include_code| include_code.equal?(code) }) && (excludes.none? { |exclude_code| exclude_code.equal?(code) })
           end
-          report = profile.results.children
+          report = profile.results[:status].children
           CSV.open(csv_path, 'w+') do |csv|
             csv << ['Status code', 'URL', page_label, 'With error']
             report.each do |child, info|
@@ -118,7 +118,7 @@ module Recluse
 
         def assert_save(profile, csv_path, report_vals)
           puts 'Saving report...'
-          report = profile.results.children
+          report = profile.results[:assert].children
           counts = {}
           CSV.open(csv_path, 'w+') do |csv|
             csv << ['Selector', 'Exists', 'On page']
@@ -182,8 +182,8 @@ module Recluse
           Signal.trap sig, &ending
         end
         (0...profile_queue.length).each do |i|
-          profile.results = profile_queue[i - 1].results unless i.zero?
-          profile.status
+          profile.results[:status] = profile_queue[i - 1].results[:status] unless i.zero?
+          profile.test :status
           profile = profile_queue[i + 1] if i + 1 < profile_queue.length
         end
         %w(INT TERM).each do |sig|
@@ -219,8 +219,8 @@ module Recluse
           Signal.trap sig, &ending
         end
         (0...profile_queue.length).each do |i|
-          profile.results = profile_queue[i - 1].results unless i.zero?
-          profile.find options['globs']
+          profile.results[:find] = profile_queue[i - 1].results[:find] unless i.zero?
+          profile.test(:find, globs: options['globs'])
           profile = profile_queue[i + 1] if i + 1 < profile_queue.length
         end
         %w(INT TERM).each do |sig|
@@ -265,9 +265,10 @@ module Recluse
         %w(INT TERM).each do |sig|
           Signal.trap sig, &ending
         end
+
         (0...profile_queue.length).each do |i|
-          profile.results = profile_queue[i - 1].results unless i.zero?
-          profile.assert options['exists']
+          profile.results[:assert] = profile_queue[i - 1].results[:assert] unless i.zero?
+          profile.test(:assert, selectors: options['exists'])
           profile = profile_queue[i + 1] if i + 1 < profile_queue.length
         end
         %w(INT TERM).each do |sig|

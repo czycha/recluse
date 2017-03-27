@@ -228,6 +228,43 @@ List the YAML info of the profile.
 
 Bug reports and pull requests are welcome on GitHub.
 
+## Extending
+
+Recluse is modular so you can add tasks if you want. Below is an example of adding your own task to Recluse.
+
+```ruby
+require 'recluse'
+
+module MyModule
+  ##
+  # Create a task object
+  class MyTask < Recluse::Tasks::Task
+    ##
+    # First argument must be the profile. The rest are hash arguments specific for the task.
+    def initialize(profile, option1: false, option2: true, results: nil)
+      # Sets up everything based on the profile, queue-specific options, and can also prepopulate results.
+      super(profile, queue_options, results: results)
+      @queue.run_if do |link|
+      	# Run a link if this function returns true.
+      	# Link is a Recluse::Link object.
+      end
+      @queue.on_complete do |link, response|
+        # Run this function after the page has either successfully been retrieved, or failed to be retrieved.
+        # Link is a Recluse::Link object.
+        # Response is a Recluse::Response object.
+      end
+    end
+  end
+end
+
+# Add your task to the task list under the key 'my_task'.
+Recluse::Tasks.add_task(:my_task, MyModule::MyTask)
+
+# You can now access 'my_task' like you would the default Recluse tasks.
+my_profile = Recluse::Profile.load('my_profile')
+my_profile.test(:my_task, option1: true, option2: true)
+results = my_profile.results[:my_task]
+```
 
 ## License
 

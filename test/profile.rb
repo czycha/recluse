@@ -1,4 +1,5 @@
 require_relative '../lib/recluse/profile.rb'
+require_relative '../lib/recluse/link.rb'
 require_relative './assertions/must_match_array.rb'
 require 'uri'
 require 'net/http'
@@ -41,18 +42,27 @@ describe Recluse::Profile do
     fname = "#{@name}.yaml"
     options = @uconf[fname]
     options['name'].must_equal @profile.name
-    options['roots'].must_match_array @profile.roots
+    options['roots']
+      .must_match_array @profile.roots.map(&:to_s)
     options['email'].must_equal @profile.email
     options['blacklist'].must_match_array @profile.blacklist
     options['whitelist'].must_match_array @profile.whitelist
     (!options['internal_only'].nil? && options['internal_only']).must_equal @profile.internal_only
     (!options['scheme_squash'].nil? && options['scheme_squash']).must_equal @profile.scheme_squash
+    (!options['redirect'].nil? && options['redirect']).must_equal @profile.redirect
   end
 
   it 'load profile' do
     @profile.save
     other = Recluse::Profile.load @name
-    assert(other == @profile)
+    @profile.name.must_equal other.name
+    @profile.email.must_equal other.email
+    @profile.roots.map(&:to_s).must_match_array other.roots.map(&:to_s)
+    @profile.blacklist.must_match_array other.blacklist
+    @profile.whitelist.must_match_array other.whitelist
+    @profile.internal_only.must_equal other.internal_only
+    @profile.scheme_squash.must_equal other.scheme_squash
+    @profile.redirect.must_equal other.redirect
   end
 
   it 'assert' do
@@ -80,8 +90,7 @@ describe Recluse::Profile do
         'div.howdy' => true
       }
     }
-    @profile.assert(['a.ext', 'div.howdy'], quiet: true)
-    children = @profile.results.children
+    children = @profile.test(:assert, selectors: ['a.ext', 'div.howdy'], quiet: true).children
     children.keys
             .must_match_array(expectations.keys)
     expectations.each do |url, values|
@@ -113,8 +122,7 @@ describe Recluse::Profile do
       ],
       'http://localhost:9533/third/fourth.html' => []
     }
-    @profile.find(['https://google.com/*', 'http://localhost:9533/third/*'], quiet: true)
-    parents = @profile.results.parents
+    parents = @profile.test(:find, globs: ['https://google.com/*', 'http://localhost:9533/third/*'], quiet: true).parents
     parents.keys
            .must_match_array(expectations.keys)
     expectations.each do |url, links|
@@ -190,8 +198,7 @@ describe Recluse::Profile do
         ]
       }
     }
-    @profile.status(quiet: true)
-    children = @profile.results.children
+    children = @profile.test(:status, quiet: true).children
     children.keys
             .must_match_array(expectations.keys)
     expectations.each do |url, expectation|

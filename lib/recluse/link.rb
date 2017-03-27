@@ -43,6 +43,12 @@ module Recluse
     end
 
     ##
+    # Inspection
+    def inspect
+      to_s
+    end
+
+    ##
     # Is the link internal compared to +Addressable::URI+ roots?
     def internal?(addrroots, scheme_squash: false)
       return true if @parent == :root

@@ -20,7 +20,7 @@ module Recluse
     ##
     # Returns the HTTP status code.
     def inspect
-      @code
+      @code.to_s
     end
 
     ##

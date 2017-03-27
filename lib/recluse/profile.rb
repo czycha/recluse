@@ -2,6 +2,7 @@ require 'recluse/hashtree'
 require 'recluse/link'
 require 'recluse/result'
 require 'recluse/info'
+require 'recluse/tasks/list'
 require 'addressable/uri'
 require 'mechanize'
 require 'colorize'
@@ -46,12 +47,16 @@ module Recluse
     attr_accessor :scheme_squash
 
     ##
-    # +HashTree+ representation of results.
-    attr_accessor :results
-
-    ##
     # When enabled, will follow redirects and report only the status code for the page that is landed upon. When disabled, will report the redirect status code. Defaults to +false+.
     attr_accessor :redirect
+
+    ##
+    # The list of run tests.
+    attr_accessor :tasks
+
+    ##
+    # Hash of resulting +HashTree+s.
+    attr_accessor :results
 
     ##
     # Create a profile.
@@ -68,17 +73,20 @@ module Recluse
       raise ProfileError, 'Profile needs roots for starting point' if roots.empty?
       @name = name
       @email = email
-      @roots = roots
+      @roots = roots.map do |root|
+        if root.class == Link
+          root
+        else
+          Link.new(root, :root)
+        end
+      end
       @blacklist = blacklist
       @whitelist = whitelist
       @internal_only = internal_only
       @scheme_squash = scheme_squash
       @redirect = redirect
-      @results = HashTree.new do |url1, url2|
-        url1, url2 = url2, url1 if url2.length > url1.length
-        # Detect if URL exists already, but just has a slash at end
-        (url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2))
-      end
+      @tasks = {}
+      @results = {}
     end
 
     ##
@@ -96,150 +104,18 @@ module Recluse
     end
 
     ##
-    # Starting from the roots, goes through each runnable link and records the referrer, the status code, and any errors.
-    # Results are saved in <tt>@results</tt>.
-    def status(quiet: false)
-      queue = @roots.map { |url| Link.new(url, :root) }
-      addrroot = @roots.map { |url| Addressable::URI.parse url }
-      raise ProfileError, 'No roots to start from' if queue.empty?
-      agent = create_agent
-      while queue.length >= 1
-        element = queue.shift
-        next unless element.run?(@blacklist, @whitelist)
-        internal = element.internal?(addrroot)
-        next if @internal_only && !internal
-        if @results.child?(element.absolute)
-          @results.add element.absolute, element.parent
-          next
-        end
-        @results.add element.absolute, element.parent
-        if @scheme_squash
-          alt = element.address
-          alt.scheme = alt.scheme == 'http' ? 'https' : 'http'
-          if @results.child?(alt.to_s)
-            @results.set_child_value element.absolute, @results.get_child_value(alt.to_s)
-            next
-          end
-        end
-        result = Result.new 'idk', false
-        begin
-          page = agent.get element.absolute
-          result.code = page.code
-          if @redirect
-            result_link = Link.new(page.uri.to_s, element.parent)
-            internal = result_link.internal?(addrroot)
-          end
-          queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } if internal && (page.class != Mechanize::File) && (page.class != Mechanize::Image)
-        rescue Mechanize::ResponseCodeError => code
-          result.code = code.response_code
-        rescue => e
-          result.error = e
-        end
-        @results.set_child_value element.absolute, result
-        unless quiet
-          puts "[#{@name.colorize(mode: :bold)}][#{result.code.colorize(color: result.color, mode: :bold)}][#{(internal ? 'internal' : 'external').colorize(mode: :bold)}] #{element.absolute}"
-          puts "\a^ #{'Error'.colorize(mode: :bold, color: :red)}: #{result.error}" unless result.error == false
+    # Runs test.
+    def test(key, options = {})
+      unless @results.key?(key) && @results[key].class == Recluse::HashTree
+        @results[key] = Recluse::HashTree.new do |url1, url2|
+          url1, url2 = url2, url1 if url2.length > url1.length
+          # Detect if URL exists already, but just has a slash at end
+          (url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2))
         end
       end
-    end
-
-    ##
-    # Find links matching glob patterns, starting from the roots. Overrides (but does not overwrite) +internal_only+ behavior to +true+.
-    def find(glob, quiet: false)
-      queue = @roots.map { |url| Link.new(url, :root) }
-      addrroot = @roots.map { |url| Addressable::URI.parse url }
-      raise ProfileError, 'No roots to start from' if queue.empty?
-      progress = ProgressBar.create(total: nil, format: '|%B|') unless quiet
-      agent = create_agent
-      while queue.length >= 1
-        element = queue.shift
-        match = element.match? glob
-        if match
-          @results.add element.absolute, element.parent
-          progress.log "[#{@name.colorize(mode: :bold)}][#{'found'.colorize(color: :green, mode: :bold)}] #{element.parent} => #{element.absolute}" unless quiet
-        end
-        next unless element.run?(@blacklist, @whitelist)
-        internal = element.internal?(addrroot)
-        next unless internal
-        next if @results.parent?(element.absolute)
-        if @scheme_squash
-          alt = element.address
-          alt.scheme = alt.scheme == 'http' ? 'https' : 'http'
-          next if @results.parent?(alt.to_s)
-        end
-        @results.add_parent element.absolute
-        result = Result.new 'idk', false
-        begin
-          page = agent.get element.absolute
-          result.code = page.code
-          if @redirect
-            result_link = Link.new(page.uri.to_s, element.parent)
-            next unless result_link.internal?(addrroot)
-          end
-          queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) } unless (page.class == Mechanize::File) || (page.class == Mechanize::Image)
-        rescue Mechanize::ResponseCodeError => code
-          result.code = code.response_code
-        rescue => e
-          result.error = e
-        end
-        progress.increment unless quiet
-        unless quiet || (result.error == false)
-          progress.log "[#{@name.colorize(mode: :bold)}][#{result.code.colorize(color: result.color, mode: :bold)}] #{element.absolute}"
-          progress.log "\a^ #{'Error'.colorize(mode: :bold, color: :red)}: #{result.error}"
-        end
-      end
-    end
-
-    ##
-    # Asserts existence of CSS selectors.
-    def assert(selectors, quiet: false)
-      queue = @roots.map { |url| Link.new(url, :root) }
-      addrroot = @roots.map { |url| Addressable::URI.parse url }
-      raise ProfileError, 'No roots to start from' if queue.empty?
-      agent = create_agent
-      while queue.length >= 1
-        element = queue.shift
-        internal = element.internal?(addrroot)
-        next unless element.run?(@blacklist, @whitelist) && internal && !@results.child?(element.absolute)
-        if @scheme_squash
-          alt = element.address
-          alt.scheme = alt.scheme == 'http' ? 'https' : 'http'
-          next if @results.child?(alt.to_s)
-        end
-        @results.add_child element.absolute
-        existence = nil
-        result = Result.new 'idk', false
-        begin
-          page = agent.get element.absolute
-          result.code = page.code
-          if @redirect
-            result_link = Link.new(page.uri.to_s, element.parent)
-            next unless result_link.internal?(addrroot)
-          end
-          unless (page.class == Mechanize::File) || (page.class == Mechanize::Image)
-            existence = {}
-            selectors.each do |selector|
-              existence[selector] = !page.css(selector).empty?
-            end
-            @results.set_child_value element.absolute, existence
-            queue += page.links.map { |link| Link.new(link.uri.to_s, element.absolute) }
-          end
-        rescue Mechanize::ResponseCodeError => code
-          result.code = code.response_code
-        rescue => e
-          result.error = e
-        end
-        unless quiet
-          if result.error != false
-            puts "[#{@name.colorize(mode: :bold)}][#{result.code.colorize(color: result.color, mode: :bold)}] #{element.absolute}"
-            puts "\a^ #{'Error'.colorize(mode: :bold, color: :red)}: #{result.error}"
-          elsif !existence.nil?
-            existence.each do |selector, exists|
-              puts "[#{@name.colorize(mode: :bold)}][#{selector.colorize(mode: :bold)}][#{exists.to_s.colorize(color: (exists ? :green : :red), mode: :bold)}] #{element.absolute}"
-            end
-          end
-        end
-      end
+      @tasks[key] = Recluse::Tasks.get(key).new(self, options.merge(results: @results[key]))
+      @tasks[key].run
+      @results[key]
     end
 
     ##
@@ -249,7 +125,7 @@ module Recluse
       fname = "#{@name}.yaml"
       options = uconf[fname]
       options['name'] = @name
-      options['roots'] = @roots
+      options['roots'] = @roots.map(&:to_s)
       options['email'] = @email
       options['blacklist'] = @blacklist
       options['whitelist'] = @whitelist
@@ -264,7 +140,9 @@ module Recluse
     def ==(other)
       return false if other.class != self.class
       instance_variables.all? do |ivar|
-        ivar == '@results'.to_sym || instance_variable_get(ivar) == other.instance_variable_get(ivar)
+        next true if ivar == '@results'.to_sym
+        next true if ivar == '@roots' && instance_variable_get(ivar).map(&:to_s) == other.instance_variable_get(ivar).map(&:to_s)
+        instance_variable_get(ivar) == other.instance_variable_get(ivar)
       end
     end
 

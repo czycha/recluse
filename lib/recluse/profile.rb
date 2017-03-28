@@ -152,7 +152,7 @@ module Recluse
       uconf = UserConfig.new '.recluse'
       raise ProfileError, "Profile '#{profile}' doesn't exist" unless uconf.exist?("#{profile}.yaml")
       options = uconf["#{profile}.yaml"]
-      expects = [:blacklist, :whitelist, :internal_only, :scheme_squash, :redirect]
+      expects = %i(blacklist whitelist internal_only scheme_squash redirect)
       opts = {}
       expects.each do |e|
         estr = e.to_s

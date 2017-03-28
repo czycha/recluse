@@ -18,15 +18,15 @@ module Recluse
       # Create new task.
       def initialize(profile, queue_options: {}, results: nil)
         @queue = Recluse::Queue.new(profile.email, queue_options)
-        if results.nil?
-          @results = Recluse::HashTree.new do |url1, url2|
-            url1, url2 = url2, url1 if url2.length > url1.length
-            # Detect if URL exists already, but just has a slash at end
-            (url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2))
-          end
-        else
-          @results = results
-        end
+        @results = if results.nil?
+                     Recluse::HashTree.new do |url1, url2|
+                       url1, url2 = url2, url1 if url2.length > url1.length
+                       # Detect if URL exists already, but just has a slash at end
+                       (url1 == url2 || (url1.length == (url2.length + 1) && url1[-1] == '/' && url2[-1] != '/' && url1[0...-1] == url2))
+                     end
+                   else
+                     results
+                   end
         @queue.add profile.roots
       end
 
